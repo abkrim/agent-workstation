@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# The kit's own checks, run by ci-local before every merge: every shell script must pass bash -n
+# and shellcheck (warnings count), and nan-gate.py must compile. shellcheck comes from its Docker
+# image when it is not installed, so this works on the workstation itself.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+scripts=(install.sh lib/common.sh modules/*.sh .wt/ci)
+for f in bin/*; do head -1 "$f" | grep -q bash && scripts+=("$f"); done
+for f in "${scripts[@]}"; do bash -n "$f"; done
+if command -v shellcheck >/dev/null; then
+  shellcheck -x -S warning "${scripts[@]}"
+else
+  docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:stable -x -S warning "${scripts[@]}"
+fi
+python3 -m py_compile bin/nan-gate.py && rm -rf bin/__pycache__
+for f in config/*.json; do python3 -m json.tool "$f" >/dev/null; done
+echo "kit checks: ${#scripts[@]} scripts, nan-gate.py and config JSON are fine"

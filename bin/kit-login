@@ -10,7 +10,7 @@
 # Every step can be skipped with Enter and done later. Secrets are written with mode 600 and never
 # passed on a command line.
 set -euo pipefail
-KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
+KIT_DIR=${KIT_DIR:-/opt/agent-workstation}
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
 
@@ -125,8 +125,8 @@ step_nan() {
   [ "$code" = 200 ] || { warn "NaN rejected the key (HTTP $code): nothing saved"; return 0; }
   printf '%s' "$key" | set_json_key "$DH/.gentle-shell/agent/auth.json" "$D" api_key
   # For GGA's reviews: nan-gate adds it on its GGA port (systemd credential, root only).
-  install -d -m 755 /etc/workstation-kit
-  (umask 077; printf '%s\n' "$key" > /etc/workstation-kit/nan.key)
+  install -d -m 755 /etc/agent-workstation
+  (umask 077; printf '%s\n' "$key" > /etc/agent-workstation/nan.key)
   systemctl restart nan-gate.service 2>/dev/null || true
   if [ -f /home/hermes/.hermes/.env ]; then
     printf '%s' "$key" | set_env /home/hermes/.hermes/.env hermes HERMES_CUSTOM_NAN_BUILDERS_API_KEY

@@ -19,8 +19,8 @@ APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";
 EOF
-cat > /etc/apt/apt.conf.d/52workstation-kit <<'EOF'
-// Managed by workstation-kit (modules/20-base.sh). Ubuntu's security origins stay the default.
+cat > /etc/apt/apt.conf.d/52agent-workstation <<'EOF'
+// Managed by agent-workstation (modules/20-base.sh). Ubuntu's security origins stay the default.
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
 // You decide when to reboot.
@@ -28,8 +28,8 @@ Unattended-Upgrade::Automatic-Reboot "false";
 EOF
 
 # fail2ban never bans the tailnet (100.64.0.0/10): after the firewall step, SSH only arrives there.
-cat > /etc/fail2ban/jail.d/00-workstation-kit.local <<'EOF'
-# Managed by workstation-kit (modules/20-base.sh)
+cat > /etc/fail2ban/jail.d/00-agent-workstation.local <<'EOF'
+# Managed by agent-workstation (modules/20-base.sh)
 [DEFAULT]
 ignoreip = 127.0.0.1/8 ::1 100.64.0.0/10
 bantime  = 1h

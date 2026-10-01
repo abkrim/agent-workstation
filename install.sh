@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# workstation-kit installer. As root, on a fresh Ubuntu 24.04 server:
+# agent-workstation installer. As root, on a fresh Ubuntu 24.04 server:
 #
 #   ./install.sh               asks a few questions the first time, then runs every module
 #   ./install.sh --from 60     resume from module 60
@@ -8,7 +8,7 @@
 # Every module is idempotent: running it again is safe, and it is also how you update.
 set -euo pipefail
 
-KIT_DIR=/opt/workstation-kit
+KIT_DIR=/opt/agent-workstation
 FROM=00
 ONLY=""
 case "${1:-}" in
@@ -24,7 +24,7 @@ esac
 . /etc/os-release
 [ "$ID $VERSION_ID" = "ubuntu 24.04" ] || { echo "Ubuntu 24.04 only (this is $PRETTY_NAME)" >&2; exit 1; }
 
-# The kit lives in /opt/workstation-kit, where every user can read it. Cloned somewhere else, it
+# The kit lives in /opt/agent-workstation, where every user can read it. Cloned somewhere else, it
 # copies itself there and carries on from the copy.
 SRC=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
 if [ "$SRC" != "$KIT_DIR" ]; then
@@ -51,7 +51,7 @@ yes_no() {  # yes_no VAR "question" default(yes|no)
 }
 
 if [ ! -f "$KIT_DIR/kit.conf" ]; then
-  printf '\n\033[1mworkstation-kit setup\033[0m: Enter keeps the value in brackets.\n\n'
+  printf '\n\033[1magent-workstation setup\033[0m: Enter keeps the value in brackets.\n\n'
   name_re='^[a-z_][a-z0-9_-]{0,31}$'
   ask ADMIN_USER "Your admin user (sudo)" admin
   [[ "$ADMIN_USER" =~ $name_re ]] || { echo "User names: lowercase letters, digits, - and _ (e.g. admin)." >&2; exit 1; }

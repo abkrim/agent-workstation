@@ -5,7 +5,7 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
 
-CONF=/etc/ssh/sshd_config.d/00-workstation-kit.conf  # 00- wins over 50-cloud-init.conf
+CONF=/etc/ssh/sshd_config.d/00-agent-workstation.conf  # 00- wins over 50-cloud-init.conf
 host=$(tailscale_host)
 
 if [ ! -f "$CONF" ]; then
@@ -19,7 +19,7 @@ if [ ! -f "$CONF" ]; then
 fi
 
 cat > "$CONF" <<EOF
-# Managed by workstation-kit (modules/40-ssh.sh)
+# Managed by agent-workstation (modules/40-ssh.sh)
 PermitRootLogin no
 PasswordAuthentication no
 KbdInteractiveAuthentication no

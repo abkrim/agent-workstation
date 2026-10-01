@@ -5,7 +5,7 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 ## Getting in
 
 - **Tailscale only.** UFW denies everything incoming except the `tailscale0` interface. The public IP answers nothing, not even SSH.
-- **SSH:** keys only (no passwords), no root login, and only `admin` and `dev` may log in (`/etc/ssh/sshd_config.d/00-workstation-kit.conf`).
+- **SSH:** keys only (no passwords), no root login, and only `admin` and `dev` may log in (`/etc/ssh/sshd_config.d/00-agent-workstation.conf`).
 - **fail2ban** watches SSH. It never bans your tailnet (100.64.0.0/10).
 - **Lockout protection:** the installer stops before SSH hardening and before the firewall until you confirm that you can log in over Tailscale.
 - **Tailscale key expiry.** Node keys expire after 180 days by default, and an expired key takes the machine off your tailnet: with the firewall on, that is a lockout. Disable key expiry for this machine in the [admin console](https://login.tailscale.com/admin/machines) (machine menu, "Disable key expiry"). The installer prints the date.
@@ -31,7 +31,7 @@ SSH only answers over Tailscale, so losing Tailscale (expired key, deleted machi
 
 ## Agents and repos
 
-- **Claude Code runs in auto mode.** A second model, a safety classifier, reviews each action instead of asking you. Anthropic reserves `bypassPermissions` (no checks at all) for isolated containers or VMs without internet access ([permission modes](https://code.claude.com/docs/en/permission-modes)), and this machine is online with your GitHub and NaN credentials. Gentle AI's `permissions` component sets `bypassPermissions`; `kit-guardrails` moves it back to auto after every install and every `gentle-ai sync`. To keep bypass anyway, create `~/.config/workstation-kit/allow-bypass` as `dev`.
+- **Claude Code runs in auto mode.** A second model, a safety classifier, reviews each action instead of asking you. Anthropic reserves `bypassPermissions` (no checks at all) for isolated containers or VMs without internet access ([permission modes](https://code.claude.com/docs/en/permission-modes)), and this machine is online with your GitHub and NaN credentials. Gentle AI's `permissions` component sets `bypassPermissions`; `kit-guardrails` moves it back to auto after every install and every `gentle-ai sync`. To keep bypass anyway, create `~/.config/agent-workstation/allow-bypass` as `dev`.
 - Deny rules apply in every mode, auto included: Gentle AI denies reading or editing secrets (`.env`, `.ssh`, keys, credentials, `gh`'s token) and destructive commands like `rm -rf ~`; the kit adds `git push --no-verify` and `gh repo delete`.
 - A `pre-push` hook in every repo blocks **deleting `main`** on the remote.
 - `ci-local` (tests plus GGA's review of the whole PR) is the gate before any merge, both for agents and for `wt rm`.

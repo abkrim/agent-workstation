@@ -32,7 +32,7 @@ members=$(getent group docker | cut -d: -f4)
 
 # Ubuntu 24.04 restricts unprivileged user namespaces; Docker's official profile for rootlesskit.
 cat > /etc/apparmor.d/usr.bin.rootlesskit <<'EOF'
-# Managed by workstation-kit (modules/60-docker.sh)
+# Managed by agent-workstation (modules/60-docker.sh)
 abi <abi/4.0>,
 include <tunables/global>
 

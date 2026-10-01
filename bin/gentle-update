@@ -28,7 +28,7 @@ failed=()
 install_gentle_shell_wrapper() {
   cat > "$HOME/.local/bin/gentle-shell" <<'EOF'
 #!/usr/bin/env bash
-# Managed by workstation-kit (bin/gentle-update). From a checkout, gentle-shell does not see Pi as a
+# Managed by agent-workstation (bin/gentle-update). From a checkout, gentle-shell does not see Pi as a
 # sibling package: GENTLE_SHELL_PI points it at the Pi that came with it.
 export GENTLE_SHELL_PI="${GENTLE_SHELL_PI:-$HOME/src/gentle-shell/node_modules/.bin/pi}"
 exec node "$HOME/src/gentle-shell/bin/gentle-shell.mjs" "$@"
@@ -108,7 +108,7 @@ update_gentle_ai_assets() {  # what gentle-ai set up in each agent; Pi is gentle
   command -v gentle-ai >/dev/null && [ -f "$HOME/.gentle-ai/state.json" ] || return 0
   PATH="$HOME/src/gentle-shell/node_modules/.bin:$PATH" PI_CODING_AGENT_DIR="$HOME/.gentle-shell/agent" \
     gentle-ai sync </dev/null >/dev/null 2>&1 || return 1
-  "${KIT_DIR:-/opt/workstation-kit}/bin/kit-guardrails" || return 1
+  "${KIT_DIR:-/opt/agent-workstation}/bin/kit-guardrails" || return 1
   log "gentle-ai sync done"
 }
 

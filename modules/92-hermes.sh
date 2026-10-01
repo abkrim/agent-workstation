@@ -62,7 +62,7 @@ as_user "$U" git config --global --get-all include.path | grep -qx /srv/shared/r
 
 units="$(home_of "$DEV_USER")/.config/systemd/user"
 cat > "$units/shared-repos.service" <<EOF
-# Managed by workstation-kit (modules/92-hermes.sh)
+# Managed by agent-workstation (modules/92-hermes.sh)
 [Unit]
 Description=Read-only copies for Hermes in /srv/shared/repos
 After=network-online.target
@@ -74,7 +74,7 @@ ExecStart=/bin/bash $KIT_DIR/bin/shared-repos-sync
 Nice=10
 EOF
 cat > "$units/shared-repos.timer" <<'EOF'
-# Managed by workstation-kit (modules/92-hermes.sh)
+# Managed by agent-workstation (modules/92-hermes.sh)
 [Unit]
 Description=shared-repos every hour
 
@@ -98,7 +98,7 @@ guard6="-A ufw6-after-output -o lo -p tcp -m owner --uid-owner $U -j REJECT --re
 add_after_rule() {  # add_after_rule FILE RULE COMMENT
   grep -qF -- "$2" "$1" && return 0
   cp -a "$1" "$1.kit-backup"
-  awk -v r="$2" -v c="# workstation-kit: $3 (modules/92-hermes.sh)" \
+  awk -v r="$2" -v c="# agent-workstation: $3 (modules/92-hermes.sh)" \
     '!done && /^COMMIT/ { print c; print r; done=1 } { print }' "$1" > "$1.kit-new" && mv "$1.kit-new" "$1"
   chmod 640 "$1"
 }
@@ -123,7 +123,7 @@ as_user "$U" bash "$KIT_DIR/bin/hermes-gentle-update" ||
 hunits="$H/.config/systemd/user"
 install -d -o "$U" -g "$U" -m 755 "$H/.config" "$H/.config/systemd" "$hunits"
 cat > "$hunits/hermes-gentle-update.service" <<EOF
-# Managed by workstation-kit (modules/92-hermes.sh)
+# Managed by agent-workstation (modules/92-hermes.sh)
 [Unit]
 Description=Gentle AI for Hermes: engram, gentle-ai and gentle-ai sync
 After=network-online.target
@@ -134,7 +134,7 @@ ExecStart=/bin/bash $KIT_DIR/bin/hermes-gentle-update
 Nice=10
 EOF
 cat > "$hunits/hermes-gentle-update.timer" <<'EOF'
-# Managed by workstation-kit (modules/92-hermes.sh)
+# Managed by agent-workstation (modules/92-hermes.sh)
 [Unit]
 Description=hermes-gentle-update every 3 hours
 

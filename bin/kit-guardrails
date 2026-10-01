@@ -5,7 +5,7 @@
 #     reviews each action instead of asking you. Anthropic keeps bypassPermissions for isolated
 #     containers or VMs without internet access (code.claude.com/docs/en/permission-modes), and
 #     this machine is online with your GitHub and NaN credentials. To keep bypass anyway, create
-#     ~/.config/workstation-kit/allow-bypass.
+#     ~/.config/agent-workstation/allow-bypass.
 # Run as the dev user by modules/88-gentle-ai.sh and 90-workflow.sh, and by gentle-update after
 # each `gentle-ai sync`, because gentle-ai's permissions component rewrites Claude Code's rules.
 set -euo pipefail
@@ -22,7 +22,7 @@ for rule in ("Bash(gh repo delete *)", "Bash(git push --no-verify *)",
     if rule not in deny:
         deny.append(rule)
         changed = True
-if perms.get("defaultMode") == "bypassPermissions" and not os.path.exists(f"{home}/.config/workstation-kit/allow-bypass"):
+if perms.get("defaultMode") == "bypassPermissions" and not os.path.exists(f"{home}/.config/agent-workstation/allow-bypass"):
     perms["defaultMode"] = "auto"
     changed = True
 if changed:

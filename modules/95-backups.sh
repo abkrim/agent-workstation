@@ -25,8 +25,8 @@ if [ ! -f /srv/backups/restic/config ]; then
 fi
 
 d=$(home_of "$DEV_USER")
-install -d -m 755 /etc/workstation-kit
-cat > /etc/workstation-kit/backup-paths <<EOF
+install -d -m 755 /etc/agent-workstation
+cat > /etc/agent-workstation/backup-paths <<EOF
 # What restic saves (modules/95-backups.sh). One path per line; missing ones are skipped.
 $d/work
 $d/trees
@@ -37,12 +37,12 @@ $d/.pi
 $d/.claude/settings.json
 $d/.claude/projects
 /home/hermes/.hermes
-/opt/workstation-kit/kit.conf
-/etc/workstation-kit
+/opt/agent-workstation/kit.conf
+/etc/agent-workstation
 /etc/ssh/sshd_config.d
 /etc/ufw
 EOF
-cat > /etc/workstation-kit/backup-excludes <<'EOF'
+cat > /etc/agent-workstation/backup-excludes <<'EOF'
 # Rebuilt or reinstalled, so not saved.
 node_modules
 .venv
@@ -58,7 +58,7 @@ install -m 755 "$KIT_DIR/bin/kit-backup" /usr/local/sbin/kit-backup
 
 svc() {  # svc NAME DESCRIPTION ARG CALENDAR
   cat > "/etc/systemd/system/$1.service" <<EOF
-# Managed by workstation-kit (modules/95-backups.sh)
+# Managed by agent-workstation (modules/95-backups.sh)
 [Unit]
 Description=$2
 
@@ -77,7 +77,7 @@ Nice=10
 IOSchedulingClass=idle
 EOF
   cat > "/etc/systemd/system/$1.timer" <<EOF
-# Managed by workstation-kit (modules/95-backups.sh)
+# Managed by agent-workstation (modules/95-backups.sh)
 [Unit]
 Description=$2 ($4)
 

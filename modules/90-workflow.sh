@@ -18,9 +18,9 @@ chmod 755 "$KIT_DIR/bin/gentle-update"
 
 h=$(home_of "$DEV_USER")
 install -d -o "$DEV_USER" -g "$DEV_USER" -m 755 "$h/work" "$h/trees"
-install -d -o "$DEV_USER" -g "$DEV_USER" -m 700 "$h/.config/workstation-kit"
-if [ ! -f "$h/.config/workstation-kit/repos" ]; then
-  cat <<'EOF' | install -o "$DEV_USER" -g "$DEV_USER" -m 600 /dev/stdin "$h/.config/workstation-kit/repos"
+install -d -o "$DEV_USER" -g "$DEV_USER" -m 700 "$h/.config/agent-workstation"
+if [ ! -f "$h/.config/agent-workstation/repos" ]; then
+  cat <<'EOF' | install -o "$DEV_USER" -g "$DEV_USER" -m 600 /dev/stdin "$h/.config/agent-workstation/repos"
 # Your repos (~/work/<name>), written by repo-add. One per line: name, owner/repo and options
 # separated by commas. Option "hermes": Hermes gets a read-only copy in /srv/shared/repos.
 EOF

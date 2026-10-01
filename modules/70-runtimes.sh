@@ -27,7 +27,7 @@ fi
 h=$(home_of "$DEV_USER")
 # The tools go on PATH at the very top of .bashrc. Ubuntu's .bashrc stops early in non-interactive
 # shells, which is what `ssh dev@host herdr` gets: anything added at the end is never read there.
-marker="# workstation-kit: tools on PATH"
+marker="# agent-workstation: tools on PATH"
 if ! grep -qF "$marker" "$h/.bashrc"; then
   { echo "$marker, also for 'ssh $DEV_USER@host <command>' (must stay above the interactive check)"
     echo 'export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"'

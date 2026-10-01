@@ -6,7 +6,7 @@
 # never write.
 set -uo pipefail
 
-KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
+KIT_DIR=${KIT_DIR:-/opt/agent-workstation}
 BASE=/srv/shared/repos
 umask 027
 failed=0

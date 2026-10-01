@@ -2,7 +2,7 @@
 
 For every agent that works here: Claude Code, gentle-shell (Pi) or any other.
 This file is the single source: `CLAUDE.md` only imports it, and GGA reviews every PR against it.
-Created by `repo-add` (workstation-kit). Fill in the project sections as you learn them.
+Created by `repo-add` (agent-workstation). Fill in the project sections as you learn them.
 
 ## Project
 

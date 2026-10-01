@@ -16,11 +16,11 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
 
-install -d -m 755 /usr/local/lib/nan-gate /etc/workstation-kit
-[ -e /etc/workstation-kit/nan.key ] || install -m 600 /dev/null /etc/workstation-kit/nan.key
+install -d -m 755 /usr/local/lib/nan-gate /etc/agent-workstation
+[ -e /etc/agent-workstation/nan.key ] || install -m 600 /dev/null /etc/agent-workstation/nan.key
 install -m 644 "$KIT_DIR/bin/nan-gate.py" /usr/local/lib/nan-gate/nan-gate.py
 cat > /etc/systemd/system/nan-gate.service <<EOF
-# Managed by workstation-kit (modules/85-nan.sh)
+# Managed by agent-workstation (modules/85-nan.sh)
 [Unit]
 Description=nan-gate: single door to NaN for this machine
 After=network-online.target
@@ -35,7 +35,7 @@ Environment=NAN_GATE_MAX_CONCURRENT=${NAN_MAX_CONCURRENT:-4}
 Environment=NAN_GATE_MAX_RPM=${NAN_MAX_RPM:-40}
 Environment=NAN_GATE_GGA_PORT=4881
 # The machine's NaN key (written by kit-login), only for GGA's port. Missing until kit-login runs.
-LoadCredential=nan-key:/etc/workstation-kit/nan.key
+LoadCredential=nan-key:/etc/agent-workstation/nan.key
 ExecStart=/usr/bin/python3 /usr/local/lib/nan-gate/nan-gate.py
 Restart=always
 RestartSec=3

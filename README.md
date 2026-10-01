@@ -1,4 +1,4 @@
-# workstation-kit
+# agent-workstation
 
 Turn a fresh Ubuntu 24.04 server into a private workstation for AI coding agents. You clone this repo, run one script and answer a few questions.
 
@@ -20,8 +20,8 @@ Pick whichever agent you like for each task. They all follow the same repo rules
 As root on the new server (about 30 minutes on a small VPS; `apt install -y git` first if git is missing):
 
 ```bash
-git clone https://github.com/lvega05/workstation-kit
-./workstation-kit/install.sh
+git clone https://github.com/lvega05/agent-workstation
+./agent-workstation/install.sh
 ```
 
 The console asks you everything along the way:
@@ -32,7 +32,7 @@ The console asks you everything along the way:
 4. **Two safety stops**, one before hardening SSH and one before turning the firewall on, so you can never lock yourself out. Each time, it asks you to log in over Tailscale from another terminal first.
 5. **Your accounts:** GitHub, your NaN key (checked before it is saved), Claude Code, and the Telegram bot for Hermes. You can skip any of them and add it later with `sudo kit-login`.
 
-Your answers are saved in `/opt/workstation-kit/kit.conf`. Edit that file and run the installer again to change anything. If the system updates brought a new kernel, the installer says so at the end: reboot when convenient.
+Your answers are saved in `/opt/agent-workstation/kit.conf`. Edit that file and run the installer again to change anything. If the system updates brought a new kernel, the installer says so at the end: reboot when convenient.
 
 From then on, connect from your computer with:
 
@@ -124,14 +124,14 @@ Hermes has its own copy of engram and gentle-ai, kept current the same way by `h
 To update the kit itself:
 
 ```bash
-cd /opt/workstation-kit && sudo git pull && sudo ./install.sh
+cd /opt/agent-workstation && sudo git pull && sudo ./install.sh
 ```
 
 Every module is idempotent, so running it again is how you update. Run a single one with `sudo ./install.sh --only 85`. Your own changes to the agents' config files are kept: the kit only copies them when they are missing.
 
 ## If something fails
 
-The installer stops at the module that failed and tells you how to resume, for example `sudo /opt/workstation-kit/install.sh --from 80`. Modules that already ran are safe to run again.
+The installer stops at the module that failed and tells you how to resume, for example `sudo /opt/agent-workstation/install.sh --from 80`. Modules that already ran are safe to run again.
 
 ## Learn more
 
@@ -148,7 +148,7 @@ The installer stops at the module that failed and tells you how to resume, for e
 
 ## Credits
 
-workstation-kit puts together tools made by others: Claude Code (Anthropic), the Gentleman Programming tools (gentle-shell, Pi, engram, gentle-ai, GGA), Hermes Agent (Nous Research), NaN, Herdr, Moshi, CodeGraph, Tailscale, mise and restic. It is not affiliated with any of them.
+agent-workstation puts together tools made by others: Claude Code (Anthropic), the Gentleman Programming tools (gentle-shell, Pi, engram, gentle-ai, GGA), Hermes Agent (Nous Research), NaN, Herdr, Moshi, CodeGraph, Tailscale, mise and restic. It is not affiliated with any of them.
 
 ## License
 

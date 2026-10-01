@@ -13,9 +13,9 @@ within a pool. A requests-per-minute ceiling keeps the machine under the per-key
 limit. On 4880 the client's own Authorization header is forwarded as is. GGA's
 OpenAI-compatible provider sends no key, so on 4881 the gate adds the machine's
 NaN key, which systemd hands it as a credential readable only by this service
-(/etc/workstation-kit/nan.key, written by kit-login). Responses, streamed ones
+(/etc/agent-workstation/nan.key, written by kit-login). Responses, streamed ones
 included, are passed through as they arrive. Standard library only. Installed by
-workstation-kit (modules/85-nan.sh).
+agent-workstation (modules/85-nan.sh).
 """
 import heapq
 import http.client

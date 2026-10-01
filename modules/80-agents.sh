@@ -41,7 +41,7 @@ fi
 units="$h/.config/systemd/user"
 install -d -o "$DEV_USER" -g "$DEV_USER" -m 755 "$h/.config/systemd" "$units"
 cat > "$units/gentle-update.service" <<EOF
-# Managed by workstation-kit (modules/80-agents.sh)
+# Managed by agent-workstation (modules/80-agents.sh)
 [Unit]
 Description=Update the coding agents and their tools
 After=network-online.target
@@ -53,7 +53,7 @@ ExecStart=/bin/bash $KIT_DIR/bin/gentle-update
 Nice=10
 EOF
 cat > "$units/gentle-update.timer" <<'EOF'
-# Managed by workstation-kit (modules/80-agents.sh)
+# Managed by agent-workstation (modules/80-agents.sh)
 [Unit]
 Description=gentle-update every 3 hours
 

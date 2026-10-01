@@ -1,7 +1,7 @@
 # Helpers shared by install.sh, the modules and kit-login. Sourced, never executed.
 # shellcheck shell=bash
 
-KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
+KIT_DIR=${KIT_DIR:-/opt/agent-workstation}
 if [ -f "$KIT_DIR/kit.conf" ]; then
   set -a
   # shellcheck disable=SC1091
@@ -70,9 +70,9 @@ install_user_env() {
   local u=$1 h
   h=$(home_of "$u")
   install -d -o "$u" -g "$u" -m 700 "$h/.config" "$h/.config/environment.d"
-  printf '# Managed by workstation-kit (lib/common.sh install_user_env)\n%s\n' "$(engram_env "$u")" |
-    install -o "$u" -g "$u" -m 600 /dev/stdin "$h/.config/environment.d/50-workstation-kit.conf"
-  local marker="# workstation-kit: engram over a unix socket"
+  printf '# Managed by agent-workstation (lib/common.sh install_user_env)\n%s\n' "$(engram_env "$u")" |
+    install -o "$u" -g "$u" -m 600 /dev/stdin "$h/.config/environment.d/50-agent-workstation.conf"
+  local marker="# agent-workstation: engram over a unix socket"
   if ! grep -qF "$marker" "$h/.bashrc" 2>/dev/null; then
     { echo "$marker (only this user can connect)"
       echo "export $(engram_env "$u")"

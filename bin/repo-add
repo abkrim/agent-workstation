@@ -6,7 +6,7 @@
 #   0. --new: creates the repo on GitHub first (private unless --public, with a README), so you
 #      can start a project from nothing;
 #   1. checks that your GitHub account can see it;
-#   2. adds it to ~/.config/workstation-kit/repos;
+#   2. adds it to ~/.config/agent-workstation/repos;
 #   3. clones it into ~/work/<repo> with a hook that blocks deleting main on the remote, and marks
 #      it as trusted for Claude Code;
 #   4. same rules for every agent: if AGENTS.md or CLAUDE.md (which only imports AGENTS.md) are
@@ -17,8 +17,8 @@
 # Safe to run again: it only does what is missing.
 set -euo pipefail
 
-KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
-LIST=$HOME/.config/workstation-kit/repos
+KIT_DIR=${KIT_DIR:-/opt/agent-workstation}
+LIST=$HOME/.config/agent-workstation/repos
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 die() { echo "repo-add: $*" >&2; exit 1; }
 
@@ -124,7 +124,7 @@ EOF
     [ -f "$dir/CLAUDE.md" ] || echo "@AGENTS.md" > "$dir/CLAUDE.md"
     git -C "$dir" add "${missing[@]}"
     git -C "$dir" commit -q -m "chore: rules for coding agents (${missing[*]})" \
-      -m "AGENTS.md is the single source for every agent; CLAUDE.md imports it. Created with workstation-kit's repo-add."
+      -m "AGENTS.md is the single source for every agent; CLAUDE.md imports it. Created with agent-workstation's repo-add."
     git -C "$dir" push -q origin main
     echo "✓ ${missing[*]} pushed to main"
   else
