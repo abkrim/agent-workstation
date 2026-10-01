@@ -4,7 +4,7 @@ A cloud machine where AI coding agents do the work and you steer, from your lapt
 
 Inside: [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), set up by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai); [Hermes](https://hermes-agent.nousresearch.com) on Telegram if you want it; [Moshi](https://getmoshi.app) to reach it all from a phone.
 
-The models come from [NaN](https://nan.builders) because of its privacy: it keeps no logs of prompts or responses, trains nothing on your code and processes in the European Union. That is why this project exists. Agents can read your whole codebase all day and your ideas go nowhere. One provider for everything also keeps the setup simple.
+The models come from [NaN](https://nan.builders) because of its privacy: it keeps no logs of prompts or responses, trains nothing on your code and processes in the European Union. That is why this project exists. Agents can read your whole codebase all day, and it stays yours. One provider for everything also keeps the setup simple.
 
 It is a workstation, not a production host: enough security that a cheap VPS on the internet does not become somebody else's, and nothing more in the way.
 
@@ -132,7 +132,7 @@ To change any of it, run `gentle-ai` as `dev`: its own screens show every option
 
 ## Models and reviews
 
-**Why NaN by default.** First, privacy: NaN states that it keeps no logs of prompts or responses, trains no models on your code and processes in the European Union ([privacy policy](https://nan.builders/privacy)), which is what you want when agents read your whole codebase all day. Then practicality: a provider priced for volume, an OpenAI-compatible API every tool already speaks, and open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools. [NaN's API](https://nan.builders/docs/api) is that provider here; the kit uses it in three places:
+**Why NaN by default.** Beyond the privacy above: a provider priced for volume, an OpenAI-compatible API every tool already speaks, and open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools. [NaN's API](https://nan.builders/docs/api) is that provider here; the kit uses it in three places:
 
 - **gentle-shell:** GLM 5.3 Flash by default, with the two profiles above.
 - **Hermes:** GLM 5.3 Flash.
