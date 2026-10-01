@@ -155,6 +155,10 @@ step_hermes() {
   local token uid
   token=$(ask_secret "  Bot token (Enter to skip): ")
   [ -n "$token" ] || { warn "Hermes skipped"; return 0; }
+  local bot
+  bot=$(curl -s --max-time 15 -K - <<<"url = \"https://api.telegram.org/bot$token/getMe\"" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["result"]["username"] if d.get("ok") else "")' 2>/dev/null || true)
+  [ -n "$bot" ] || { warn "Telegram rejected that token: nothing saved. Copy it again from @BotFather."; return 0; }
+  echo "  Bot: @$bot"
   uid=$(ask "  Your Telegram user id: ")
   [[ "$uid" =~ ^[0-9]+$ ]] || { warn "that is not a numeric id: Hermes skipped"; return 0; }
   printf '%s' "$token" | set_env /home/hermes/.hermes/.env hermes TELEGRAM_BOT_TOKEN

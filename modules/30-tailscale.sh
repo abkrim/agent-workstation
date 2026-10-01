@@ -20,4 +20,6 @@ if ! tailscale status >/dev/null 2>&1; then
   log "Open the link below and approve this machine in your tailnet"
   tailscale up --hostname="${TAILSCALE_HOSTNAME:-workstation}"
 fi
-ok "Tailscale: $(tailscale status --json | jq -r .Self.DNSName | sed 's/\.$//') ($(tailscale ip -4))"
+ok "Tailscale: $(tailscale_host) ($(tailscale ip -4 | head -1))"
+tailscale status --json | jq -e '.Self.DNSName != ""' >/dev/null 2>&1 ||
+  warn "MagicDNS is off in your tailnet: you will connect by IP. Turn it on in the Tailscale admin console (DNS) to use the name instead."

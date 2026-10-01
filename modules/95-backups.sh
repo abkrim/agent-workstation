@@ -38,6 +38,7 @@ $d/.claude/settings.json
 $d/.claude/projects
 /home/hermes/.hermes
 /opt/workstation-kit/kit.conf
+/etc/workstation-kit
 /etc/ssh/sshd_config.d
 /etc/ufw
 EOF

@@ -6,7 +6,7 @@ set -euo pipefail
 . "$KIT_DIR/lib/common.sh"
 
 CONF=/etc/ssh/sshd_config.d/00-workstation-kit.conf  # 00- wins over 50-cloud-init.conf
-host=$(tailscale status --json | jq -r .Self.DNSName | sed 's/\.$//')
+host=$(tailscale_host)
 
 if [ ! -f "$CONF" ]; then
   echo

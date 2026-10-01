@@ -19,6 +19,7 @@ case "${1:-}" in
 esac
 
 [ "$(id -u)" = 0 ] || { echo "Run as root: sudo ./install.sh" >&2; exit 1; }
+[[ "$FROM$ONLY" =~ ^[0-9]*$ ]] || { echo "Module numbers are two digits, e.g. --from 60" >&2; exit 1; }
 # shellcheck disable=SC1091
 . /etc/os-release
 [ "$ID $VERSION_ID" = "ubuntu 24.04" ] || { echo "Ubuntu 24.04 only (this is $PRETTY_NAME)" >&2; exit 1; }
@@ -51,11 +52,19 @@ yes_no() {  # yes_no VAR "question" default(yes|no)
 
 if [ ! -f "$KIT_DIR/kit.conf" ]; then
   printf '\n\033[1mworkstation-kit setup\033[0m: Enter keeps the value in brackets.\n\n'
+  name_re='^[a-z_][a-z0-9_-]{0,31}$'
   ask ADMIN_USER "Your admin user (sudo)" admin
+  [[ "$ADMIN_USER" =~ $name_re ]] || { echo "User names: lowercase letters, digits, - and _ (e.g. admin)." >&2; exit 1; }
   ask DEV_USER "User for your repos and the coding agents (no sudo)" dev
+  [[ "$DEV_USER" =~ $name_re ]] || { echo "User names: lowercase letters, digits, - and _ (e.g. dev)." >&2; exit 1; }
+  [ "$ADMIN_USER" != "$DEV_USER" ] || { echo "The admin and dev users must be different." >&2; exit 1; }
+  for u in "$ADMIN_USER" "$DEV_USER"; do
+    case "$u" in root|hermes|restic) echo "$u is reserved; pick another name." >&2; exit 1 ;; esac
+  done
   ask TIMEZONE "Time zone (e.g. America/Mexico_City)" "$(timedatectl show -p Timezone --value 2>/dev/null || echo UTC)"
   timedatectl list-timezones | grep -qx "$TIMEZONE" || { echo "  unknown time zone, using UTC"; TIMEZONE=UTC; }
   ask TAILSCALE_HOSTNAME "Name of this machine in your tailnet" workstation
+  [[ "$TAILSCALE_HOSTNAME" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] || { echo "Machine names: lowercase letters, digits and - (e.g. workstation)." >&2; exit 1; }
   # SSH keys for both users: root's (what the VPS panel set up) and/or any you paste.
   SSH_PUBLIC_KEY=""
   key_re='^(ssh-|ecdsa-|sk-)'
@@ -110,9 +119,13 @@ done
 
 if [ -z "$ONLY" ]; then
   # shellcheck disable=SC1091
-  . "$KIT_DIR/kit.conf"
-  host=$(tailscale status --json 2>/dev/null | jq -r .Self.DNSName | sed 's/\.$//')
+  . "$KIT_DIR/lib/common.sh"
+  host=$(tailscale_host)
   printf '\n\033[1;32mAll set.\033[0m From your computer (with Tailscale on):\n\n'
   printf '    ssh -t %s@%s herdr\n\n' "${DEV_USER:-dev}" "${host:-$TAILSCALE_HOSTNAME}"
   printf 'Then: repo-add <owner>/<repo>, and see %s/docs/getting-started.md\n' "$KIT_DIR"
+  if [ -f /var/run/reboot-required ]; then
+    printf '\n\033[1;33m!\033[0m The system updates included a new kernel: reboot when convenient (sudo reboot).\n'
+    printf '  Everything the kit set up starts again on its own.\n'
+  fi
 fi

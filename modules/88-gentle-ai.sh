@@ -36,8 +36,12 @@ fail() { tail -n 15 "$LOG" >&2; die "$1 (full output in $LOG)"; }
 
 : >"$LOG"
 chown "$DEV_USER:$DEV_USER" "$LOG"
-log "Gentle AI for Claude Code and gentle-shell (a few minutes)"
-ga gentle-ai install --agents claude-code,pi --preset full-gentleman --persona neutral ||
+agents=claude-code
+if [ -x "$h/src/gentle-shell/node_modules/.bin/pi" ]; then agents=claude-code,pi
+else warn "gentle-shell is not installed yet: Gentle AI goes on Claude Code only (rerun --only 88 later)"
+fi
+log "Gentle AI for $agents (a few minutes)"
+ga gentle-ai install --agents "$agents" --preset full-gentleman --persona neutral ||
   fail "gentle-ai install failed"
 
 log "CodeGraph"

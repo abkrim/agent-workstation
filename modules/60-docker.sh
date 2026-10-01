@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Docker: the system daemon (nobody in the docker group, which would equal root) and rootless
-# Docker for DEV_USER, which is the one the agents use. Published ports default to 127.0.0.1:
-# Docker bypasses the firewall, so nothing gets exposed by accident.
+# Docker for DEV_USER in rootless mode, which is what the agents use: its daemon runs as dev, in
+# its own user namespace, so a container escape lands in dev, not root. Docker's packages bring a
+# system daemon too; it stays installed but disabled (nobody is in the docker group, which would
+# equal root). Published ports default to 127.0.0.1: Docker bypasses the firewall, so nothing
+# gets exposed by accident.
 set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
@@ -22,9 +24,8 @@ DAEMON='{
   "log-opts": { "max-size": "10m", "max-file": "3" }
 }'
 install -d -m 755 /etc/docker
-printf '%s\n' "$DAEMON" > /etc/docker/daemon.json
-systemctl enable --now docker containerd >/dev/null
-systemctl restart docker
+printf '%s\n' "$DAEMON" > /etc/docker/daemon.json  # in case someone enables the system daemon later
+systemctl disable --now docker.service docker.socket containerd.service >/dev/null 2>&1 || true
 
 members=$(getent group docker | cut -d: -f4)
 [ -z "$members" ] || warn "the docker group has members ($members): that is root access for them"
@@ -54,4 +55,4 @@ fi
 user_systemctl "$DEV_USER" enable docker >/dev/null 2>&1
 user_systemctl "$DEV_USER" restart docker
 as_user "$DEV_USER" docker context use rootless >/dev/null
-ok "Docker: system daemon and rootless Docker for $DEV_USER (ports on 127.0.0.1)"
+ok "rootless Docker for $DEV_USER (ports on 127.0.0.1); the system daemon stays off"

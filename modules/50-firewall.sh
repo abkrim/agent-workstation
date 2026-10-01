@@ -7,7 +7,7 @@ set -euo pipefail
 
 apt_install ufw
 if ! ufw status | grep -q "Status: active"; then
-  host=$(tailscale status --json | jq -r .Self.DNSName | sed 's/\.$//')
+  host=$(tailscale_host)
   echo
   echo "  After this step the public IP stops answering. Your way in is: ssh $ADMIN_USER@$host"
   echo "  (this session survives; new ones must come through Tailscale)"

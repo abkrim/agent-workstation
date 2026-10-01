@@ -58,6 +58,15 @@ wait_user_bus() {
   die "systemd for $1 did not start (/run/user/$uid/bus)"
 }
 
+# tailscale_host: this machine's name in the tailnet (MagicDNS), or its Tailscale IP when MagicDNS
+# is off. What people type after ssh user@.
+tailscale_host() {
+  local h
+  h=$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' | sed 's/\.$//')
+  [ -n "$h" ] || h=$(tailscale ip -4 2>/dev/null | head -1)
+  printf '%s' "$h"
+}
+
 # confirm "question": true only if the person types yes.
 confirm() {
   local ans

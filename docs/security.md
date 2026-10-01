@@ -19,7 +19,7 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 | `hermes` | Hermes Agent *(optional)* | No | No |
 | `restic` | Local backups *(optional)*. It can read everything and write only its repository | No | No |
 
-- Nobody is in the `docker` group, which would amount to root. `dev` uses **rootless Docker**, and published ports default to 127.0.0.1.
+- `dev` uses **rootless Docker**: its daemon runs as `dev`, so a container escape lands in `dev`, not root. Docker's system daemon stays disabled, and nobody is in the `docker` group, which would amount to root. Published ports default to 127.0.0.1.
 - Agents run as `dev`, so a misbehaving agent can damage `dev`'s files, not the system.
 
 ## Agents and repos
@@ -29,7 +29,7 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 - A `pre-push` hook in every repo blocks **deleting `main`** on the remote.
 - `ci-local` (tests plus GGA's review of the whole PR) is the gate before any merge, both for agents and for `wt rm`.
 - `claude-trust` only marks folders under `~/work` and `~/trees`, your own repos, as trusted.
-- nan-gate holds the machine's NaN key only to add it to GGA's reviews, on its own local port. systemd hands it the key as a credential that only the gate can read.
+- nan-gate holds the machine's NaN key only to add it to GGA's reviews, on its own local port (127.0.0.1:4881). systemd hands it the key as a credential that only the gate can read. Any local user could send requests to that port, so it spends your NaN quota, never more: the users on this machine already hold the key or cannot log in.
 
 ## Hermes
 
@@ -44,8 +44,20 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 - They are asked for by `kit-login`, never put in `kit.conf` or in this repo.
 - They are stored with mode 600, readable only by the user that needs them, and never passed on a command line, where other users could see them.
 
+## What you trust
+
+The kit installs software from other projects. Know where it comes from:
+
+- **Ubuntu, Docker, Tailscale, GitHub CLI, mise:** their signed apt repositories.
+- **Claude Code and Hermes:** their official install scripts, fetched over HTTPS and run as `dev` and `hermes`, never as root.
+- **gentle-shell, engram, gentle-ai, GGA:** built from the `main` branch of their GitHub repositories, as `dev` (and `hermes` for its own copy), every 3 hours. You get fixes fast, and you also get whatever lands on `main`. Pin a version by editing `bin/gentle-update` if you prefer.
+- **Pi packages, CodeGraph, context7:** from npm, as `dev`.
+- **Models:** your prompts and code go to NaN (and to Anthropic when you use Claude Code). Read their terms.
+
+Nothing runs as root except the kit's own modules and the system services it configures.
+
 ## Updates and backups
 
-- Ubuntu security updates install automatically. Reboots are up to you.
+- Ubuntu security updates install automatically. Reboots are up to you: the installer tells you when one is pending, and later `cat /var/run/reboot-required` does.
 - The Gentleman tools follow their `main` branch and refresh every 3 hours. Other tools update when you re-run the installer, and Claude Code updates itself.
 - Local backups (optional) are encrypted with restic. **Save the restic password somewhere else**: without it they cannot be read. Since they live on the same disk, they also need your provider's snapshots to protect against losing the server.

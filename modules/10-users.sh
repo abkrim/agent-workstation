@@ -43,7 +43,10 @@ ok "SSH key(s) installed for $ADMIN_USER and $DEV_USER"
 install -d -o root -g agents -m 2750 /srv/shared
 install -d -o "$DEV_USER" -g agents -m 2750 /srv/shared/repos
 
-# The dev user's services (rootless Docker, timers) run without an open session.
+# The dev user's services (rootless Docker, timers) run without an open session. Some cloud
+# images ship without dbus-user-session, and lingering needs it.
+apt-get update -qq
+apt_install dbus-user-session
 loginctl enable-linger "$DEV_USER"
 wait_user_bus "$DEV_USER"
 ok "users ready: $ADMIN_USER (sudo), $DEV_USER (no sudo)"

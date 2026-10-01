@@ -17,7 +17,7 @@ Pick whichever agent you like for each task. They all follow the same repo rules
 
 ## Install
 
-As root on the new server:
+As root on the new server (about 30 minutes on a small VPS; `apt install -y git` first if git is missing):
 
 ```bash
 git clone https://github.com/lvega05/workstation-kit
@@ -32,7 +32,7 @@ The console asks you everything along the way:
 4. **Two safety stops**, one before hardening SSH and one before turning the firewall on, so you can never lock yourself out. Each time, it asks you to log in over Tailscale from another terminal first.
 5. **Your accounts:** GitHub, your NaN key (checked before it is saved), Claude Code, and the Telegram bot for Hermes. You can skip any of them and add it later with `sudo kit-login`.
 
-Your answers are saved in `/opt/workstation-kit/kit.conf`. Edit that file and run the installer again to change anything.
+Your answers are saved in `/opt/workstation-kit/kit.conf`. Edit that file and run the installer again to change anything. If the system updates brought a new kernel, the installer says so at the end: reboot when convenient.
 
 From then on, connect from your computer with:
 
@@ -60,7 +60,7 @@ wt rm <repo> <task>          # merges what is left (only if ci-local is green) a
 | `30-tailscale` | Tailscale: the only way in once the firewall is on. |
 | `40-ssh` | SSH with keys only, no root, only `admin` and `dev`. |
 | `50-firewall` | UFW: everything incoming denied except Tailscale. |
-| `60-docker` | Docker, with nobody in the `docker` group, plus rootless Docker for `dev`. Ports bind to 127.0.0.1. |
+| `60-docker` | Rootless Docker for `dev` (the system daemon stays off, nobody in the `docker` group). Ports bind to 127.0.0.1. |
 | `70-runtimes` | Through [mise](https://mise.jdx.dev): Node 24, pnpm, Bun, Python, uv and Go. Plus the GitHub CLI. |
 | `80-agents` | Claude Code; gentle-shell with the NaN provider; [engram](https://github.com/Gentleman-Programming/engram), gentle-ai and [GGA](https://github.com/Gentleman-Programming/gentleman-guardian-angel); Herdr with the integrations for each agent. |
 | `85-nan` | **nan-gate**, so everything on the machine that uses NaN stays within your plan's limits. GGA reviews with NaN. Two model profiles for gentle-shell: `opensource-glm` (active, GLM 5.3 Flash orchestrates) and `opensource` (DeepSeek V4 Flash orchestrates); switch with `/gentle:profiles`. |
