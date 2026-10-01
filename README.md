@@ -166,7 +166,7 @@ Before the first release the kit was installed on a fresh VPS and checked from t
 | Only SSH over the tailnet | Same connects to the machine's Tailscale IP | Only 22 answers |
 | SSH policy in force | `sshd_config.d/00-agent-workstation.conf`; login attempts as `root` and `hermes` over the tailnet | Both refused; `admin` and `dev` with keys only |
 | Privileges | `id` of every user, `sudo -n true` as `dev`, `getent group docker` | Only `admin` has sudo; `dev`'s password locked; nobody in `docker` |
-| Local listeners | `ss -tlnu` | nan-gate on 127.0.0.1 only; engram on a unix socket; Docker's system daemon off |
+| Local listeners | `ss -tlnu` | nan-gate and engram on 127.0.0.1 only; Docker's system daemon off |
 | Secrets | `ls -l` of the NaN key, GitHub token, Claude credentials, Hermes `.env` | All mode 600, owned by their user |
 | Hermes isolation | As a Hermes-like user, `curl` to a `dev` service and to nan-gate on loopback | Service refused, nan-gate allowed |
 | nan-gate sandbox | `systemd-analyze security nan-gate.service`, then a review through its GGA port | 1.1 (OK); review answered |

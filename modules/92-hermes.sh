@@ -36,7 +36,7 @@ if [ ! -x "$H/.local/bin/hermes" ]; then
   rm -f "$tmp"
 fi
 chmod 700 "$H/.hermes"
-install_user_env "$U"
+install_user_env "$U" "$(engram_env "$U")"  # its engram on a socket, off dev's port
 
 hcfg() { as_user "$U" hermes config set "$1" "$2" >/dev/null; }
 hcfg model.provider custom

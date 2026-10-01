@@ -58,24 +58,26 @@ wait_user_bus() {
   die "systemd for $1 did not start (/run/user/$uid/bus)"
 }
 
-# engram_env USER: the environment that keeps engram's HTTP API off TCP. By default `engram serve`
-# listens on 127.0.0.1:7437 with no authentication for reads, so any local user could read that
-# user's memories. On a unix socket inside the user's runtime directory (mode 700) only the user
-# itself can connect. Clients (the Claude Code hook, the CLI) honor the same variable.
+# engram_env USER: keeps that user's engram HTTP API on a unix socket in its private runtime
+# directory (mode 700) instead of TCP. Used for hermes only: its engram goes through the MCP, which
+# reads the database directly, and this keeps it off dev's port. dev's engram stays on
+# 127.0.0.1:7437, because gentle-shell's memory package (gentle-engram) only speaks HTTP; what keeps
+# other users away from it is the Hermes loopback guard (modules/92-hermes.sh).
 engram_env() { printf 'ENGRAM_SOCKET=/run/user/%s/engram.sock' "$(id -u "$1")"; }
 
-# install_user_env USER: the same variables for the user's shells (.bashrc, at the top, so they
-# also reach `ssh user@host <command>`) and for the user's systemd services (environment.d).
+# install_user_env USER LINE...: environment for the user's shells (.bashrc, at the top, so it also
+# reaches `ssh user@host <command>`) and for the user's systemd services (environment.d).
 install_user_env() {
   local u=$1 h
+  shift
   h=$(home_of "$u")
   install -d -o "$u" -g "$u" -m 700 "$h/.config" "$h/.config/environment.d"
-  printf '# Managed by agent-workstation (lib/common.sh install_user_env)\n%s\n' "$(engram_env "$u")" |
+  { echo "# Managed by agent-workstation (lib/common.sh install_user_env)"; printf '%s\n' "$@"; } |
     install -o "$u" -g "$u" -m 600 /dev/stdin "$h/.config/environment.d/50-agent-workstation.conf"
-  local marker="# agent-workstation: engram over a unix socket"
+  local marker="# agent-workstation: environment for this user"
   if ! grep -qF "$marker" "$h/.bashrc" 2>/dev/null; then
-    { echo "$marker (only this user can connect)"
-      echo "export $(engram_env "$u")"
+    { echo "$marker"
+      printf 'export %s\n' "$@"
       echo
       cat "$h/.bashrc" 2>/dev/null
     } > "$h/.bashrc.kit" && mv "$h/.bashrc.kit" "$h/.bashrc"

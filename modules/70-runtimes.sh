@@ -38,7 +38,6 @@ if ! grep -qF "$marker" "$h/.bashrc"; then
 fi
 line='eval "$(mise activate bash)"'
 grep -qxF "$line" "$h/.bashrc" || echo "$line" >> "$h/.bashrc"
-install_user_env "$DEV_USER"
 install -d -o "$DEV_USER" -g "$DEV_USER" -m 755 "$h/.local" "$h/.local/bin"
 
 log "installing runtimes for $DEV_USER (several minutes the first time)"

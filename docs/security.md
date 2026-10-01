@@ -36,7 +36,7 @@ SSH only answers over Tailscale, so losing Tailscale (expired key, deleted machi
 - A `pre-push` hook in every repo blocks **deleting `main`** on the remote.
 - `ci-local` (tests plus GGA's review of the whole PR) is the gate before any merge, both for agents and for `wt rm`.
 - `claude-trust` only marks folders under `~/work` and `~/trees`, your own repos, as trusted.
-- engram's HTTP API, which its own tools spawn on demand, listens on a unix socket in the user's private runtime directory instead of a TCP port. Out of the box it would listen on 127.0.0.1:7437 and answer reads with no authentication, so any local user could read another user's memories.
+- engram's HTTP API for `dev` listens on 127.0.0.1:7437 and answers reads with no authentication, because gentle-shell's memory package only speaks HTTP. The Hermes loopback guard (below) is what keeps the other agent user away from it; `admin` is you. Hermes's own engram uses a unix socket in its private runtime directory, off that port.
 - nan-gate runs in a strict systemd sandbox (dynamic user, read-only system, no capabilities, filtered system calls, loopback and HTTPS only; `systemd-analyze security` rates it 1.1). It holds the machine's NaN key only to add it to GGA's reviews, on its own local port (127.0.0.1:4881). systemd hands it the key as a credential that only the gate can read. Any local user could send requests to that port, so it spends your NaN quota, never more: the users on this machine already hold the key or cannot log in.
 
 ## Hermes
