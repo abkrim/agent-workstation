@@ -30,6 +30,17 @@ as_user() {
   (cd /tmp && sudo -u "$u" -H env PATH="$h/.local/share/mise/shims:$h/.local/bin:/usr/local/bin:/usr/bin:/bin" "$@")
 }
 
+# as_user_tty USER CMD... — like as_user, for programs you interact with (logins, menus, codes to
+# paste). runuser hands them this very terminal; a second sudo would put them behind its own
+# pseudo-terminal, where some terminals stop passing keystrokes through. Needs root.
+as_user_tty() {
+  local u=$1 h
+  shift
+  h=$(home_of "$u")
+  (cd /tmp && runuser -u "$u" -- env HOME="$h" USER="$u" LOGNAME="$u" \
+    PATH="$h/.local/share/mise/shims:$h/.local/bin:/usr/local/bin:/usr/bin:/bin" "$@")
+}
+
 # user_systemctl USER ARGS... — systemctl --user for USER (needs lingering enabled).
 user_systemctl() {
   local u=$1 uid

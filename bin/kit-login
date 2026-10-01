@@ -100,7 +100,9 @@ step_github() {
   else
     echo "  Now the GitHub CLI, for pull requests. It shows a one-time code: open"
     echo "  https://github.com/login/device on your computer and enter it."
-    as_user "$D" gh auth login --hostname github.com --git-protocol ssh --skip-ssh-key --web </dev/tty ||
+    echo "  (after you authorize it, this can take a few seconds to notice)"
+    as_user_tty "$D" env BROWSER=true GH_BROWSER=true gh auth login --hostname github.com --git-protocol ssh \
+      --skip-ssh-key --web </dev/tty ||
       { warn "gh login did not finish: run 'sudo kit-login github' again"; return 0; }
   fi
   as_user "$D" gh auth setup-git >/dev/null 2>&1 || true
@@ -135,7 +137,8 @@ step_claude() {
     return 0
   fi
   [ "$(ask "  Log in to Claude Code now? [Y/n] ")" != n ] || { warn "Claude Code skipped"; return 0; }
-  as_user "$D" claude auth login </dev/tty || { warn "Claude Code login did not finish"; return 0; }
+  echo "  Open the link it shows (Cmd/Ctrl + click), authorize, then paste the code back here."
+  as_user_tty "$D" claude auth login </dev/tty || { warn "Claude Code login did not finish"; return 0; }
   ok "Claude Code logged in"
 }
 
