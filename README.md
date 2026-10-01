@@ -10,13 +10,13 @@ It is a workstation, not a production host: enough security that a cheap VPS on 
 
 ## How you work
 
-1. **Open the workstation.** From your laptop, `ssh -t dev@<machine> herdr`. From your phone, open Moshi and tap the machine. Either way you land in [Herdr](https://herdr.dev), a terminal that keeps a workspace per repo and per task and never loses them when you disconnect.
-2. **Start a task.** `wt new my-app login` gives that task its own branch, folder, ports and Herdr workspace. The repo's `main` is never touched.
-3. **Hand it to an agent.** Open `claude` or `gentle-shell` in the task and say what you want, as you would to a person: "add login with magic links, run ci-local, open the PR and merge it if it is green."
+1. **Open the workstation.** From your laptop, `ssh -t dev@<machine> herdr`. From your phone, open Moshi and tap the machine. Either way you land in [Herdr](https://herdr.dev), a terminal with a sidebar: one workspace per repo, one per task, and none of them lost when you disconnect.
+2. **Start a task.** In the `~` workspace, `wt new my-app login` gives that task its own branch, folder, ports and Herdr workspace. The repo's `main` is never touched. Switch to the task's workspace (click it, or `Ctrl-B W`).
+3. **Hand it to an agent.** Open `claude` or `gentle-shell` there and say what you want, as you would to a person: "add login with magic links; commit when you are done."
 4. **Go do something else.** The agent works. Herdr's sidebar shows whether it is busy, waiting for you or done. With Moshi, your phone gets a push when it needs an answer or an approval, and you can reply from the notification.
-5. **Close the task.** `wt rm my-app login` runs the repo's checks and a review of the whole pull request by GGA against your rules; if everything is green it merges and cleans up. If not, it tells you what failed and leaves things in place.
+5. **Close the task.** Back in `~`, `wt rm my-app login` runs the repo's checks and a review of the whole pull request by GGA against your rules; if everything is green it pushes, merges and cleans up. If not, it tells you what failed and leaves things in place.
 
-Several tasks can run at once, each with its own agent. The agents share one memory per repo through engram, so what was decided in one task is known in the next, and the same rules file, `AGENTS.md`, applies to all of them.
+Several tasks can run at once, each with its own agent. The agents share one memory per repo through engram, so what was decided in one task is known in the next, and the same rules file, `AGENTS.md`, applies to all of them. **[docs/getting-started.md](docs/getting-started.md)** walks through all of it, with two full days typed out.
 
 ## What you stop doing by hand
 
@@ -83,17 +83,22 @@ Then follow **[docs/getting-started.md](docs/getting-started.md)**, which walks 
 ## Daily use, in short
 
 ```bash
+ssh -t dev@<machine-name> herdr   # from your laptop; in a plain shell, just: herdr
+
 repo-add <owner>/<repo>      # once per repo: clone it, ready for any agent (--new creates it on GitHub first)
 wt new <repo> <task>         # a branch, folder, ports and Herdr workspace for one task
+                             # Ctrl-B W: switch to the task's workspace
 claude                       # or gentle-shell; both remember through engram
-wt rm <repo> <task>          # merges what is left (only if ci-local is green) and cleans up
+wt rm <repo> <task>          # back in ~: merges what is left (only if ci-local is green) and cleans up
 ```
+
+Herdr's prefix is `Ctrl-B`: `W` picks a workspace, `C` opens a tab, `Q` leaves with everything running, `?` lists the rest.
 
 ## From your phone
 
 [Moshi](https://getmoshi.app) (iOS and Android, free plan) is a terminal that connects straight to the machine over SSH or Mosh through Tailscale, with no relay in between. It lists your Herdr sessions in a tab; tap one and you are in the same workspaces as on your laptop, with the same `Ctrl-B` prefix.
 
-Adding the machine takes a QR (`kit-moshi connect`) or one command with the phone's key (`kit-phone-key`). If you also want push notifications and approvals from the agents on your phone, `kit-moshi` installs Moshi's hook with conservative settings: it is a closed-source daemon from getmoshi.app, so the guide spells out exactly what it sends and what it never sends. All of it in **[docs/phone.md](docs/phone.md)**.
+Adding the machine takes a QR (`kit-moshi connect`, from your laptop) or one command with the phone's key (`kit-phone-key`). If you also want push notifications and approvals from the agents on your phone, `kit-moshi` installs Moshi's hook with conservative settings: it is a closed-source daemon from getmoshi.app, so the guide spells out exactly what it sends and what it never sends. All of it in **[docs/phone.md](docs/phone.md)**.
 
 ## What it sets up
 
@@ -197,6 +202,8 @@ Every module is idempotent, so running it again is how you update. Run a single 
 ## If something fails
 
 The installer stops at the module that failed and tells you how to resume, for example `sudo /opt/agent-workstation/install.sh --from 80`. Modules that already ran are safe to run again.
+
+For the first day of use (a plain shell instead of Herdr, an agent opened on `main`, a Telegram token that is refused, a QR you cannot scan from the phone itself), **[docs/troubleshooting.md](docs/troubleshooting.md)** has the answers.
 
 ## Learn more
 
