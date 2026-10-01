@@ -64,34 +64,40 @@ step_github() {
     echo "$key" | sudo -u "$D" tee -a "$DH/.ssh/known_hosts" >/dev/null
   fi
 
+  # 1. The SSH key (git clone and push): you paste it on GitHub yourself, then it is checked.
+  if as_user "$D" ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    ok "this machine's SSH key is already on your GitHub account"
+  else
+    echo "  1. Open https://github.com/settings/ssh/new on your computer."
+    echo "  2. Title: anything (e.g. $(hostname)). Key: paste this line, then press 'Add SSH key':"
+    echo
+    sudo -u "$D" cat "$DH/.ssh/id_ed25519.pub" | sed 's/^/     /'
+    echo
+    while :; do
+      [ "$(ask "  Press Enter once it is added (s + Enter to skip GitHub): ")" != s ] || { warn "GitHub skipped"; return 0; }
+      as_user "$D" ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated" && break
+      echo "  GitHub does not accept it yet. Check that you pasted the whole line and saved it."
+    done
+    ok "SSH key accepted by GitHub"
+  fi
+
+  # 2. The GitHub CLI (pull requests, merges): a one-time code, no menus.
   if as_user "$D" gh auth status >/dev/null 2>&1; then
     ok "gh is already logged in as $(as_user "$D" gh api user -q .login)"
   else
-    echo "  Log in with your browser, or paste a token (classic, with repo, read:org and"
-    echo "  admin:public_key; or fine-grained with the repos you want). Enter at the first"
-    echo "  question to skip."
-    as_user "$D" gh auth login --hostname github.com --git-protocol ssh --scopes admin:public_key </dev/tty ||
-      { warn "GitHub skipped"; return 0; }
+    echo "  Now the GitHub CLI, for pull requests. It shows a one-time code: open"
+    echo "  https://github.com/login/device on your computer and enter it."
+    as_user "$D" gh auth login --hostname github.com --git-protocol ssh --skip-ssh-key --web </dev/tty ||
+      { warn "gh login did not finish: run 'sudo kit-login github' again"; return 0; }
   fi
   as_user "$D" gh auth setup-git >/dev/null 2>&1 || true
-
-  local pub
-  pub=$(sudo -u "$D" awk '{print $2}' "$DH/.ssh/id_ed25519.pub")
-  if ! as_user "$D" gh ssh-key list 2>/dev/null | grep -qF "$pub"; then
-    as_user "$D" gh ssh-key add "$DH/.ssh/id_ed25519.pub" --title "workstation-kit $(hostname)" >/dev/null ||
-      warn "could not upload the SSH key: add $DH/.ssh/id_ed25519.pub at github.com/settings/keys"
-  fi
 
   login=$(as_user "$D" gh api user -q .login)
   id=$(as_user "$D" gh api user -q .id)
   name=$(as_user "$D" gh api user -q '.name // .login')
   as_user "$D" git config --global user.name "$name"
   as_user "$D" git config --global user.email "$id+$login@users.noreply.github.com"
-  if as_user "$D" ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
-    ok "GitHub: $login (SSH and gh), commits as $name <$id+$login@users.noreply.github.com>"
-  else
-    warn "SSH to GitHub does not work yet: check the key at github.com/settings/keys"
-  fi
+  ok "GitHub: $login, commits as $name <$id+$login@users.noreply.github.com>"
 }
 
 step_nan() {

@@ -11,6 +11,8 @@ fi
 ADMIN_USER=${ADMIN_USER:-admin}
 DEV_USER=${DEV_USER:-dev}
 export DEBIAN_FRONTEND=noninteractive
+# needrestart: restart services quietly after upgrades instead of printing its scan on every apt run.
+export NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1
 
 log()  { printf '\033[1;34m▸\033[0m %s\n' "$*"; }
 ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }

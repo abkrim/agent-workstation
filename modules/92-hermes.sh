@@ -84,4 +84,4 @@ chown "$DEV_USER:$DEV_USER" "$units"/shared-repos.*
 user_systemctl "$DEV_USER" daemon-reload
 user_systemctl "$DEV_USER" enable --now shared-repos.timer >/dev/null 2>&1
 
-ok "Hermes $(as_user "$U" hermes --version 2>/dev/null | head -1) (Telegram is set up in kit-login)"
+ok "$(as_user "$U" hermes --version 2>/dev/null | head -1) (Telegram is set up in kit-login)"
