@@ -132,7 +132,7 @@ EOF
   fi
 fi
 
-if command -v herdr >/dev/null && herdr status server >/dev/null 2>&1; then
+if command -v herdr >/dev/null && herdr status server 2>/dev/null | grep -q '^status: running'; then
   if herdr workspace list | python3 -c '
 import json, sys
 ws = json.load(sys.stdin)["result"]["workspaces"]

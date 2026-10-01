@@ -69,6 +69,30 @@ chown "$DEV_USER:$DEV_USER" "$units"/gentle-update.*
 user_systemctl "$DEV_USER" daemon-reload
 user_systemctl "$DEV_USER" enable --now gentle-update.timer >/dev/null 2>&1
 
+# --- Herdr's server, always on: wt, repo-add and Moshi find it before anyone opens the terminal,
+# and `ssh -t dev@host herdr` attaches to it. The user's systemd starts it at boot (linger). ---
+cat > "$units/herdr-server.service" <<'EOF'
+# Managed by agent-workstation (modules/80-agents.sh)
+[Unit]
+Description=Herdr server (workspaces per repo and per task, kept alive between connections)
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/share/mise/shims/herdr server
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+chown "$DEV_USER:$DEV_USER" "$units/herdr-server.service"
+user_systemctl "$DEV_USER" daemon-reload
+user_systemctl "$DEV_USER" enable --now herdr-server.service >/dev/null 2>&1
+for _ in $(seq 1 10); do as_user "$DEV_USER" herdr status server 2>/dev/null | grep -q '^status: running' && break; sleep 1; done
+ok "Herdr server running as $DEV_USER ($(as_user "$DEV_USER" herdr status server 2>/dev/null | head -1))"
+
 # --- Herdr integrations: the sidebar shows if each agent is working, blocked or done ---
 [ -x "$h/.local/bin/gentle-shell" ] &&
   as_user "$DEV_USER" env PI_CODING_AGENT_DIR="$h/.gentle-shell/agent" herdr integration install pi >/dev/null

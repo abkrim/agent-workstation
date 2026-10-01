@@ -74,11 +74,18 @@ if [ ! -f "$KIT_DIR/kit.conf" ]; then
     yes_no reuse "Allow them for $ADMIN_USER and $DEV_USER?" yes
     [ "$reuse" = no ] || SSH_PUBLIC_KEY=$(grep -E "$key_re" /root/.ssh/authorized_keys)
   fi
+  prompt="Paste your computer's SSH public key, to log in from it (Enter to skip): "
   while :; do
-    read -r -p "  Paste another SSH public key to allow (Enter when done): " extra </dev/tty
+    read -r -p "  $prompt" extra </dev/tty
     [ -n "$extra" ] || break
     if [[ "$extra" =~ $key_re ]]; then
-      SSH_PUBLIC_KEY=$(printf '%s\n%s' "$SSH_PUBLIC_KEY" "$extra" | sed '/^$/d' | awk '!seen[$1 " " $2]++')
+      if printf '%s\n' "$SSH_PUBLIC_KEY" | grep -qF "$(printf '%s' "$extra" | awk '{print $2}')"; then
+        echo "  = that key is already in the list"
+      else
+        SSH_PUBLIC_KEY=$(printf '%s\n%s' "$SSH_PUBLIC_KEY" "$extra" | sed '/^$/d')
+        echo "  ✓ added: $(printf '%s' "$extra" | awk '{print ($3 ? $3 : "key")}')"
+      fi
+      prompt="One more? Paste it, or Enter to continue: "
     else
       echo "  that is not an SSH public key (it starts with ssh-ed25519, ssh-rsa, ecdsa-...)"
     fi

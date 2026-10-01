@@ -25,7 +25,8 @@ mkdir -p "$STATE/slots" "$TREES"
 
 die() { echo "wt: $*" >&2; exit 1; }
 valid() { [[ "$1" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || die "invalid name: '$1' (lowercase, digits, . _ -)"; }
-herdr_up() { command -v herdr >/dev/null && herdr status server >/dev/null 2>&1; }
+# `herdr status server` exits 0 even when it says "not running": read what it says.
+herdr_up() { command -v herdr >/dev/null && herdr status server 2>/dev/null | grep -q '^status: running'; }
 
 compose_file() {  # prints the worktree's compose file, if any
   local d="$1" f

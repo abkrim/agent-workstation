@@ -6,7 +6,7 @@ How work happens on this machine, from the first connection to a merged pull req
 
 | Piece | What it is |
 |---|---|
-| **Herdr** | The terminal you work in. It keeps a workspace per repo and per task, shows in its sidebar what each agent is doing, and keeps everything running when you disconnect. |
+| **Herdr** | The terminal you work in. It keeps a workspace per repo and per task, shows in its sidebar what each agent is doing, and keeps everything running when you disconnect. Its server runs all the time as `dev`, so the workspaces exist even before you open it. |
 | `~/work/<repo>` | A clean copy of each repo, always on `main`. Nobody works here: it is the base that tasks start from. |
 | `~/trees/<repo>--<task>` | One folder per task (a git worktree) with its own branch, its own ports, and its own Herdr workspace. This is where agents work. |
 | **Agents** | `claude` (Claude Code) and `gentle-shell` (Pi). Pick either, per task. Both read the same rules, `AGENTS.md` in the repo. |
