@@ -4,9 +4,10 @@
 #     never exceed your plan's simultaneous requests (NAN_MAX_CONCURRENT) and per-minute limit.
 #     Hermes has priority over development. It holds no key: each client sends its own.
 #   - OpenCode with NaN (GLM 5.3 Flash by default) through the gate.
-#   - Model profiles for gentle-shell (/gentle:profiles): "opensource" (DeepSeek V4 Flash
-#     orchestrates) and "opensource-glm" (GLM 5.3 Flash orchestrates). Pi's NaN provider cannot be
-#     pointed at the gate, so it goes direct.
+#   - Model profiles for gentle-shell (/gentle:profiles): "opensource-glm" (active, GLM 5.3 Flash
+#     orchestrates) and "opensource" (DeepSeek V4 Flash orchestrates), both with Qwen 3.8 Flash and
+#     the other two for the sub-agents. gentle-shell's NaN provider cannot be pointed at the gate,
+#     so it goes direct.
 #   - GGA reviews pull requests with OpenCode + NaN.
 # Config files are only copied when missing: your own changes are never overwritten.
 # The NaN key itself is asked for by kit-login.
@@ -58,4 +59,19 @@ copy_if_missing "$KIT_DIR/config/opencode.json" "$h/.config/opencode/opencode.js
 copy_if_missing "$KIT_DIR/config/gga.conf" "$h/.config/gga/config"
 install -d -o "$DEV_USER" -g "$DEV_USER" -m 700 "$h/.pi"
 copy_if_missing "$KIT_DIR/config/gentle-profiles.json" "$h/.pi/gentle-ai/profiles.json"
+
+# Pi needs a default model or it refuses to start ("No API key found for the selected model").
+# NaN with GLM 5.3 Flash, the orchestrator of the active "opensource-glm" profile; only when none is chosen.
+if [ -d "$h/.gentle-shell/agent" ]; then
+  as_user "$DEV_USER" python3 - "$h/.gentle-shell/agent/settings.json" <<'EOF'
+import json, os, sys
+p = sys.argv[1]
+d = json.load(open(p)) if os.path.exists(p) else {}
+if not d.get("defaultProvider"):
+    d["defaultProvider"], d["defaultModel"] = "nan", "glm5.3-flash"
+    with open(p, "w") as f:
+        json.dump(d, f, indent=2)
+        f.write("\n")
+EOF
+fi
 ok "OpenCode, GGA and gentle-shell profiles use NaN (the key comes in kit-login)"

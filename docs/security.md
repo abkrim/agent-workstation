@@ -13,7 +13,7 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 
 | User | Purpose | sudo | SSH |
 |---|---|---|---|
-| `root` | Emergencies only, from your provider's web console | — | No |
+| `root` | Emergencies only, from your provider's web console | No | No |
 | `admin` | You, for administration | Yes, with a password | Yes |
 | `dev` | Your repos and the coding agents | **No** | Yes |
 | `hermes` | Hermes Agent *(optional)* | No | No |

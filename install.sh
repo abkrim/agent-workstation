@@ -50,7 +50,7 @@ yes_no() {  # yes_no VAR "question" default(yes|no)
 }
 
 if [ ! -f "$KIT_DIR/kit.conf" ]; then
-  printf '\n\033[1mworkstation-kit setup\033[0m — Enter keeps the value in brackets.\n\n'
+  printf '\n\033[1mworkstation-kit setup\033[0m: Enter keeps the value in brackets.\n\n'
   ask ADMIN_USER "Your admin user (sudo)" admin
   ask DEV_USER "User for your repos and the coding agents (no sudo)" dev
   ask TIMEZONE "Time zone (e.g. America/Mexico_City)" "$(timedatectl show -p Timezone --value 2>/dev/null || echo UTC)"

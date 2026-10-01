@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# ci-local [DIR] — a repo's checks, run here instead of on a paid CI. DIR is the checkout (default:
-# the current directory). Exits 0 when everything passes, 2 when it does not know how to test the
-# repo. Agents run it before merging; wt rm runs it before merging leftovers.
+# ci-local [DIR]: a repo's checks, run here instead of on a paid CI. DIR is the checkout (default:
+# the current directory). Exits 0 when everything passes, 1 when something fails. Agents run it
+# before merging; wt rm runs it before merging leftovers. A repo with no checks it can find (only
+# docs, say) passes with a warning: GGA still reviews the PR.
 #
 # Recipe, in this order:
 #   1. .wt/ci, if the repo has one (executable): the repo's own checks.
@@ -56,8 +57,8 @@ elif [ -f pnpm-lock.yaml ] || [ -f package-lock.json ]; then
     fi
   done
 else
-  echo "ci-local: no recipe for $REPO. Add an executable .wt/ci to the repo with its checks." >&2
-  exit 2
+  echo "⚠ ci-local: no checks found for $REPO (no .wt/ci, uv.lock, pnpm-lock.yaml or package-lock.json)." >&2
+  echo "  Add an executable .wt/ci with the repo's checks. For now only GGA's review runs." >&2
 fi
 
 branch=$(git rev-parse --abbrev-ref HEAD)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# kit-backup [backup|check] — local restic backups (modules/95-backups.sh).
+# kit-backup [backup|check]: local restic backups (modules/95-backups.sh).
 #   backup: saves /etc/workstation-kit/backup-paths and applies retention (7 daily, 4 weekly,
 #           6 monthly).
 #   check:  verifies the repository, reading 10 % of the data.

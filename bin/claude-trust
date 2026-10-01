@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude-trust DIR... — mark folders as trusted for Claude Code (the same as accepting its "trust
+# claude-trust DIR...: mark folders as trusted for Claude Code (the same as accepting its "trust
 # this folder" dialog the first time). repo-add uses it for each repo and wt new for each task, so
 # opening an agent never needs a manual step. Only folders under ~/work and ~/trees (your own
 # repos). Atomic write of ~/.claude.json.

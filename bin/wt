@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# wt — one worktree per task, with its own ports, an optional database and a Herdr workspace.
+# wt: one worktree per task, with its own ports, an optional database and a Herdr workspace.
 #
 #   wt new <repo> <task> [feat|fix|chore]   creates ~/trees/<repo>--<task> on branch <type>/<task>
 #   wt ls                                   lists open tasks
@@ -159,7 +159,8 @@ cmd_rm() {
       echo "▸ $branch has unmerged work: ci-local, PR and merge"
       (cd "$dir" && ci-local) ||
         die "ci-local is not green: nothing pushed, merged or removed. Fix it in the task and run wt rm again"
-      git -C "$dir" push -q -u origin "$branch"
+      local out
+      out=$(git -C "$dir" push -q -u origin "$branch" 2>&1) || { printf '%s\n' "$out" >&2; die "pushing $branch failed: nothing removed"; }
       if [ "$pr_state" != OPEN ]; then
         (cd "$dir" && gh pr create --base main --head "$branch" --fill >/dev/null)
       fi

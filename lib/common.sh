@@ -22,7 +22,7 @@ die()  { printf '\033[1;31m✗\033[0m %s\n' "$*" >&2; exit 1; }
 enabled() { [ "${!1:-no}" = yes ]; }
 home_of() { getent passwd "$1" | cut -d: -f6; }
 
-# as_user USER CMD... — run a command as USER with its own tools on PATH (mise shims, ~/.local/bin).
+# as_user USER CMD...: run a command as USER with its own tools on PATH (mise shims, ~/.local/bin).
 as_user() {
   local u=$1 h
   shift
@@ -30,7 +30,7 @@ as_user() {
   (cd /tmp && sudo -u "$u" -H env PATH="$h/.local/share/mise/shims:$h/.local/bin:/usr/local/bin:/usr/bin:/bin" "$@")
 }
 
-# as_user_tty USER CMD... — like as_user, for programs you interact with (logins, menus, codes to
+# as_user_tty USER CMD...: like as_user, for programs you interact with (logins, menus, codes to
 # paste). runuser hands them this very terminal; a second sudo would put them behind its own
 # pseudo-terminal, where some terminals stop passing keystrokes through. Needs root.
 as_user_tty() {
@@ -41,7 +41,7 @@ as_user_tty() {
     PATH="$h/.local/share/mise/shims:$h/.local/bin:/usr/local/bin:/usr/bin:/bin" "$@")
 }
 
-# user_systemctl USER ARGS... — systemctl --user for USER (needs lingering enabled).
+# user_systemctl USER ARGS...: systemctl --user for USER (needs lingering enabled).
 user_systemctl() {
   local u=$1 uid
   shift
@@ -50,7 +50,7 @@ user_systemctl() {
     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" systemctl --user "$@")
 }
 
-# wait_user_bus USER — after enable-linger, wait for the user's systemd to be up.
+# wait_user_bus USER: after enable-linger, wait for the user's systemd to be up.
 wait_user_bus() {
   local uid
   uid=$(id -u "$1")
@@ -58,7 +58,7 @@ wait_user_bus() {
   die "systemd for $1 did not start (/run/user/$uid/bus)"
 }
 
-# confirm "question" — true only if the person types yes.
+# confirm "question": true only if the person types yes.
 confirm() {
   local ans
   read -r -p "$1 Type 'yes' to continue: " ans </dev/tty

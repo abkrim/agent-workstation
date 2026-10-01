@@ -25,9 +25,19 @@ if ! command -v gh >/dev/null; then
 fi
 
 h=$(home_of "$DEV_USER")
-for line in 'eval "$(mise activate bash)"' 'export PATH="$HOME/.local/bin:$PATH"'; do
-  grep -qxF "$line" "$h/.bashrc" || echo "$line" >> "$h/.bashrc"
-done
+# The tools go on PATH at the very top of .bashrc. Ubuntu's .bashrc stops early in non-interactive
+# shells, which is what `ssh dev@host herdr` gets: anything added at the end is never read there.
+marker="# workstation-kit: tools on PATH"
+if ! grep -qF "$marker" "$h/.bashrc"; then
+  { echo "$marker, also for 'ssh $DEV_USER@host <command>' (must stay above the interactive check)"
+    echo 'export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"'
+    echo
+    cat "$h/.bashrc"
+  } > "$h/.bashrc.kit" && mv "$h/.bashrc.kit" "$h/.bashrc"
+  chown "$DEV_USER:$DEV_USER" "$h/.bashrc"
+fi
+line='eval "$(mise activate bash)"'
+grep -qxF "$line" "$h/.bashrc" || echo "$line" >> "$h/.bashrc"
 install -d -o "$DEV_USER" -g "$DEV_USER" -m 755 "$h/.local" "$h/.local/bin"
 
 log "installing runtimes for $DEV_USER (several minutes the first time)"

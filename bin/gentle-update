@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# gentle-update — install or update the Gentleman ecosystem from main, as the dev user (no sudo):
-#   gentle-shell  ~/src/gentle-shell  (only when main moved; if installing fails, rolls back)
-#   engram        go install .../engram/v2/cmd/engram@main          → ~/.local/bin
-#   gentle-ai     go install .../gentle-ai/v3/cmd/gentle-ai@main    → ~/.local/bin
-#   gga           ~/src/gga (git pull + ./install.sh)               → ~/.local/bin
-# gentle-update.timer runs it every 3 hours (modules/80-agents.sh). Exits 1 if anything failed.
+# gentle-update: keep every agent tool current, as the dev user (no sudo, low priority):
+#   gentle-shell  ~/src/gentle-shell from main (only when main moved; if installing fails, rolls back)
+#                 and its Pi packages, the NaN provider included (gentle-shell update --extensions)
+#   engram        go install <module declared by main>/cmd/engram@main      → ~/.local/bin
+#   gentle-ai     go install <module declared by main>/cmd/gentle-ai@main   → ~/.local/bin
+#   gga           ~/src/gga from main (git pull + ./install.sh)              → ~/.local/bin
+#   Claude Code   claude update
+#   OpenCode, Herdr  latest release (mise upgrade)
+# The Go module path is read from main's go.mod on every run, so a new major version (v3 → v4)
+# is followed instead of silently staying on the old one. Each part is independent: one failure
+# does not stop the rest. gentle-update.timer runs it every 3 hours (modules/80-agents.sh).
+# Exits 1 if anything failed.
 set -uo pipefail
 
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
@@ -53,7 +59,16 @@ update_gentle_shell() {
   fi
 }
 
-update_go_tool() {  # $1 binary name, $2 module@main
+# module_of OWNER/REPO: the module path main's go.mod declares (e.g. .../gentle-ai/v4)
+module_of() {
+  curl -fsSL "https://raw.githubusercontent.com/$1/main/go.mod" | awk '/^module/ { print $2; exit }'
+}
+
+update_go_tool() {  # $1 binary name, $2 OWNER/REPO
+  local mod
+  mod=$(module_of "$2")
+  [ -n "$mod" ] || { log "$1: could not read the module path of $2 main"; return 1; }
+  set -- "$1" "$mod/cmd/$1@main"
   local bin="$GOBIN/$1" before after
   before=$(go version -m "$bin" 2>/dev/null | awk '$1=="mod"{print $3}')
   go install "$2" 2>&1 | tail -n 5 || return 1
@@ -78,10 +93,31 @@ update_gga() {
   log "gga ${old:0:8} → ${new:0:8}"
 }
 
+update_pi_packages() {  # gentle-shell's Pi packages (NaN provider, engram bridge...). Pi itself comes
+  [ -x "$HOME/.local/bin/gentle-shell" ] || return 0  # with gentle-shell's checkout, so only extensions here
+  gentle-shell update --extensions >/dev/null 2>&1 || return 1
+  log "gentle-shell packages updated"
+}
+
+update_claude() {
+  command -v claude >/dev/null || return 0
+  local out
+  out=$(claude update 2>&1) || { log "claude: $out" | tail -1; return 1; }
+  log "claude: $(printf '%s\n' "$out" | grep -v '^\s*$' | tail -1)"
+}
+
+update_releases() {  # OpenCode and Herdr follow their latest release through mise
+  mise upgrade --yes github:anomalyco/opencode herdr >/dev/null 2>&1 || return 1
+  log "opencode $(opencode --version 2>/dev/null) · $(herdr --version 2>/dev/null)"
+}
+
 update_gentle_shell || failed+=(gentle-shell)
-update_go_tool engram    github.com/Gentleman-Programming/engram/v2/cmd/engram@main      || failed+=(engram)
-update_go_tool gentle-ai github.com/gentleman-programming/gentle-ai/v3/cmd/gentle-ai@main || failed+=(gentle-ai)
+update_pi_packages || failed+=(gentle-shell-packages)
+update_go_tool engram    Gentleman-Programming/engram    || failed+=(engram)
+update_go_tool gentle-ai Gentleman-Programming/gentle-ai || failed+=(gentle-ai)
 update_gga || failed+=(gga)
+update_claude || failed+=(claude)
+update_releases || failed+=(opencode/herdr)
 
 if [ ${#failed[@]} -gt 0 ]; then log "FAILED: ${failed[*]}"; exit 1; fi
 log "OK"

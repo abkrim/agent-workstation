@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# repo-add — bring one of your GitHub repos into the workstation, ready for any agent. As dev:
+# repo-add: bring one of your GitHub repos into the workstation, ready for any agent. As dev:
 #
 #   repo-add <owner/repo | GitHub URL> [--hermes] [--yes]
 #
@@ -139,7 +139,6 @@ echo
 echo "── $name is ready in ~/work/$name"
 case "$ci" in
   0) echo "   ci-local: green" ;;
-  2) echo "   ci-local: no recipe yet. Add an executable .wt/ci to the repo with its checks." ;;
   *) echo "   ci-local: failing on main. Look at the output above before starting work." ;;
 esac
 echo "   To work: wt new $name <task>"

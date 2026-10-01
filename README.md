@@ -23,7 +23,7 @@ git clone https://github.com/lvega05/workstation-kit
 ./workstation-kit/install.sh
 ```
 
-That's it. The console asks you everything along the way:
+The console asks you everything along the way:
 
 1. **A few settings:** user names, time zone, the machine's name, and whether you want Hermes and backups. Enter keeps the defaults.
 2. **A password** for your admin user.
@@ -78,17 +78,27 @@ Details in **[docs/getting-started.md](docs/getting-started.md)**.
 
 See **[docs/security.md](docs/security.md)**. In short: the server is reachable only through your tailnet, with SSH keys only and no root login. `dev`, the user the agents run as, has no sudo, and Docker runs rootless. Hermes can only read what you share with it. Security updates install themselves.
 
-## Updating
+## Updates
+
+Every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev` and at low priority:
+
+- gentle-shell, engram, gentle-ai and GGA from their `main` branch;
+- gentle-shell's packages, the NaN provider included;
+- Claude Code, OpenCode and Herdr, to their latest release.
+
+If one of them fails, the rest still update and the next run tries again. See what it did with `journalctl --user -u gentle-update` (as `dev`).
+
+To update the kit itself:
 
 ```bash
-cd /opt/workstation-kit && git pull && sudo ./install.sh
+cd /opt/workstation-kit && sudo git pull && sudo ./install.sh
 ```
 
 Every module is idempotent, so running it again is how you update. Run a single one with `sudo ./install.sh --only 85`. Your own changes to the agents' config files are kept: the kit only copies them when they are missing.
 
 ## Credits
 
-workstation-kit puts together great tools made by others: Claude Code (Anthropic), the Gentleman Programming ecosystem (gentle-shell, Pi, engram, gentle-ai, GGA), OpenCode, Herdr, Hermes Agent (Nous Research), NaN, Tailscale, mise and restic. It is not affiliated with any of them.
+workstation-kit puts together tools made by others: Claude Code (Anthropic), the Gentleman Programming ecosystem (gentle-shell, Pi, engram, gentle-ai, GGA), OpenCode, Herdr, Hermes Agent (Nous Research), NaN, Tailscale, mise and restic. It is not affiliated with any of them.
 
 ## License
 

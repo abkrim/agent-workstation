@@ -7,7 +7,7 @@ set -euo pipefail
 
 getent group agents >/dev/null || groupadd agents
 
-# new_user NAME COMMENT — if a group with that name already exists (Ubuntu ships an "admin" group),
+# new_user NAME COMMENT: if a group with that name already exists (Ubuntu ships an "admin" group),
 # the user joins it instead of failing to create its own.
 new_user() {
   id "$1" &>/dev/null && return 0

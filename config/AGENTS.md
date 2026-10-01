@@ -1,7 +1,7 @@
-# AGENTS.md — {{NAME}}
+# Rules for agents in {{NAME}}
 
-Rules for any agent working in this repo (Claude Code, Pi/gentle-shell, OpenCode, ...).
-This is the single source: `CLAUDE.md` only imports it, and GGA reviews every PR against it.
+For every agent that works here: Claude Code, gentle-shell (Pi), OpenCode or any other.
+This file is the single source: `CLAUDE.md` only imports it, and GGA reviews every PR against it.
 Created by `repo-add` (workstation-kit). Fill in the project sections as you learn them.
 
 ## Project

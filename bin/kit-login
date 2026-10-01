@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# kit-login — connect your accounts, one step at a time. Run with sudo; safe to run again.
+# kit-login: connect your accounts, one step at a time. Run with sudo; safe to run again.
 #
 #   sudo kit-login             every step
 #   sudo kit-login github      GitHub: SSH key, gh login, git identity
@@ -21,22 +21,23 @@ title() { printf '\n\033[1m── %s\033[0m\n' "$*"; }
 ask() { local v; read -r -p "$1" v </dev/tty; printf '%s' "$v"; }
 ask_secret() { local v; read -r -s -p "$1" v </dev/tty; echo >&2; printf '%s' "$v"; }
 
-# set_json_key FILE USER — reads a key on stdin, stores {"nan": {"type": "api", "key": ...}} in FILE.
+# set_json_key FILE USER TYPE: reads a key on stdin, stores {"nan": {"type": TYPE, "key": ...}} in FILE.
+# Pi wants type "api_key" and OpenCode "api": with the wrong one, each ignores the key.
 set_json_key() {
   sudo -u "$2" python3 -c '
 import json, os, sys
 p, key = sys.argv[1], sys.stdin.read().strip()
 os.makedirs(os.path.dirname(p), mode=0o700, exist_ok=True)
 d = json.load(open(p)) if os.path.exists(p) else {}
-d["nan"] = {"type": "api", "key": key}
+d["nan"] = {"type": sys.argv[2], "key": key}
 fd = os.open(p + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
 with os.fdopen(fd, "w") as f:
     json.dump(d, f, indent=2)
 os.replace(p + ".tmp", p)
-' "$1"
+' "$1" "$3"
 }
 
-# set_env FILE USER NAME — reads a value on stdin, sets NAME=value in a .env file (mode 600).
+# set_env FILE USER NAME: reads a value on stdin, sets NAME=value in a .env file (mode 600).
 set_env() {
   sudo -u "$2" python3 -c '
 import os, sys
@@ -50,7 +51,7 @@ os.replace(p + ".tmp", p)
 ' "$1" "$3"
 }
 
-# github_ssh_ok — true when GitHub accepts the dev user's SSH key. `ssh -T` always exits 1 (GitHub
+# github_ssh_ok: true when GitHub accepts the dev user's SSH key. `ssh -T` always exits 1 (GitHub
 # gives no shell), so the answer is read from its message, not its exit code. Retries for a few
 # seconds: a key just added on github.com can take a moment to work.
 github_ssh_ok() {
@@ -122,8 +123,8 @@ step_nan() {
   [ -n "$key" ] || { warn "NaN skipped"; return 0; }
   code=$(curl -s -o /dev/null -w '%{http_code}' -K - https://api.nan.builders/v1/models <<<"header = \"Authorization: Bearer $key\"")
   [ "$code" = 200 ] || { warn "NaN rejected the key (HTTP $code): nothing saved"; return 0; }
-  printf '%s' "$key" | set_json_key "$DH/.gentle-shell/agent/auth.json" "$D"
-  printf '%s' "$key" | set_json_key "$DH/.local/share/opencode/auth.json" "$D"
+  printf '%s' "$key" | set_json_key "$DH/.gentle-shell/agent/auth.json" "$D" api_key
+  printf '%s' "$key" | set_json_key "$DH/.local/share/opencode/auth.json" "$D" api
   if [ -f /home/hermes/.hermes/.env ]; then
     printf '%s' "$key" | set_env /home/hermes/.hermes/.env hermes HERMES_CUSTOM_NAN_BUILDERS_API_KEY
   fi

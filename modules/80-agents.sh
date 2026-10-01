@@ -6,7 +6,8 @@
 #   - OpenCode
 #   - Herdr, the terminal workspace manager, with its integrations so its sidebar shows what each
 #     agent is doing
-# The Gentleman tools follow their main branch: gentle-update.timer refreshes them every 3 hours.
+# gentle-update.timer keeps all of them current every 3 hours: the Gentleman tools from their main
+# branch, gentle-shell's packages, Claude Code, OpenCode and Herdr (bin/gentle-update).
 set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
@@ -43,7 +44,7 @@ install -d -o "$DEV_USER" -g "$DEV_USER" -m 755 "$h/.config/systemd" "$units"
 cat > "$units/gentle-update.service" <<EOF
 # Managed by workstation-kit (modules/80-agents.sh)
 [Unit]
-Description=Update the Gentleman ecosystem from main
+Description=Update the coding agents and their tools
 After=network-online.target
 
 [Service]
