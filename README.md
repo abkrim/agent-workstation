@@ -97,6 +97,8 @@ Adding the machine takes a QR (`kit-moshi connect`) or one command with the phon
 
 ## What it sets up
 
+The installer is a series of numbered scripts in `modules/`. They run in this order, and the number is what you give `--from` or `--only` to resume or repeat one.
+
 | Module | What you get |
 |---|---|
 | `10-users` | `admin` (sudo, with a password) and `dev` (no sudo) with your SSH key. |
