@@ -2,7 +2,11 @@
 
 A cloud machine where AI coding agents do the work and you steer, from your laptop or your phone. Clone this repo on a fresh Ubuntu 24.04 VPS, run one script, answer a few questions, and in about half an hour you have the server, the agents, the models, the memory and the workflow set up and kept up to date. Then you spend your time on your ideas instead of on the setup.
 
-It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. The only thing you cannot do without is a Linux server. The models come from [NaN](https://nan.builders) by default: a private provider that keeps no logs of your prompts or the responses, trains nothing on your code and processes everything in the European Union. That privacy is why this project exists. One provider for everything is also what keeps the setup simple; the rest is optional. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
+Inside: [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), set up by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai); [Hermes](https://hermes-agent.nousresearch.com) on Telegram if you want it; [Moshi](https://getmoshi.app) to reach it all from a phone.
+
+The models come from [NaN](https://nan.builders) because of its privacy: it keeps no logs of prompts or responses, trains nothing on your code and processes in the European Union. That is why this project exists. Agents can read your whole codebase all day and your ideas go nowhere. One provider for everything also keeps the setup simple.
+
+It is a workstation, not a production host: enough security that a cheap VPS on the internet does not become somebody else's, and nothing more in the way.
 
 ## How you work
 
