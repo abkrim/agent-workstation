@@ -67,7 +67,12 @@ WantedBy=timers.target
 EOF
 chown "$DEV_USER:$DEV_USER" "$units"/gentle-update.*
 user_systemctl "$DEV_USER" daemon-reload
-user_systemctl "$DEV_USER" enable --now gentle-update.timer >/dev/null 2>&1
+if enabled AUTO_UPDATE; then
+  user_systemctl "$DEV_USER" enable --now gentle-update.timer >/dev/null 2>&1
+else
+  user_systemctl "$DEV_USER" disable --now gentle-update.timer >/dev/null 2>&1 || true
+  log "automatic updates are off (AUTO_UPDATE=no in kit.conf): sudo kit-updates now | on"
+fi
 
 # --- Herdr's server, always on: wt, repo-add and Moshi find it before anyone opens the terminal,
 # and `ssh -t dev@host herdr` attaches to it. The user's systemd starts it at boot (linger). ---

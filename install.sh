@@ -93,6 +93,7 @@ if [ ! -f "$KIT_DIR/kit.conf" ]; then
   [ -n "$SSH_PUBLIC_KEY" ] || { echo "At least one SSH key is needed to log in." >&2; exit 1; }
   yes_no INSTALL_HERMES "Install Hermes, a Telegram assistant that can read the repos you share?" yes
   yes_no INSTALL_BACKUPS "Daily local backups of your work (restic)?" yes
+  yes_no AUTO_UPDATE "Update the agents on their own every 3 hours (Gentleman tools from main; Claude Code, Herdr, Moshi to their latest release)?" yes
   ask NAN_MAX_CONCURRENT "NaN: simultaneous requests this machine may use (your plan's limit)" 4
 
   sed -e "s|^ADMIN_USER=.*|ADMIN_USER=$ADMIN_USER|" \
@@ -101,6 +102,7 @@ if [ ! -f "$KIT_DIR/kit.conf" ]; then
       -e "s|^TAILSCALE_HOSTNAME=.*|TAILSCALE_HOSTNAME=$TAILSCALE_HOSTNAME|" \
       -e "s|^INSTALL_HERMES=.*|INSTALL_HERMES=$INSTALL_HERMES|" \
       -e "s|^INSTALL_BACKUPS=.*|INSTALL_BACKUPS=$INSTALL_BACKUPS|" \
+      -e "s|^AUTO_UPDATE=.*|AUTO_UPDATE=$AUTO_UPDATE|" \
       -e "s|^NAN_MAX_CONCURRENT=.*|NAN_MAX_CONCURRENT=$NAN_MAX_CONCURRENT|" \
       "$KIT_DIR/kit.conf.example" |
     KEYS="$SSH_PUBLIC_KEY" awk '/^SSH_PUBLIC_KEY=/ { print "SSH_PUBLIC_KEY=\"" ENVIRON["KEYS"] "\""; next } { print }' \

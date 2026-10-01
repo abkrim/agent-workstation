@@ -10,6 +10,7 @@ if [ -f "$KIT_DIR/kit.conf" ]; then
 fi
 ADMIN_USER=${ADMIN_USER:-admin}
 DEV_USER=${DEV_USER:-dev}
+AUTO_UPDATE=${AUTO_UPDATE:-yes}  # a kit.conf from before this setting keeps updating
 export DEBIAN_FRONTEND=noninteractive
 # needrestart: restart services quietly after upgrades instead of printing its scan on every apt run.
 export NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1

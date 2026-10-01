@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# kit-updates: the automatic updates of the agents, on or off. Run with sudo.
+#
+#   sudo kit-updates status   what is on, and when the next run is
+#   sudo kit-updates off      stop the 3-hour timers (dev's gentle-update, Hermes's own copy)
+#   sudo kit-updates on       start them again
+#   sudo kit-updates now      update everything once, right now, whatever the setting
+#
+# The choice is kept in kit.conf (AUTO_UPDATE), so a later ./install.sh respects it. What gets
+# updated is listed at the top of bin/gentle-update. Claude Code also updates itself on its own,
+# as it does on any machine; this switch does not change that.
+set -euo pipefail
+KIT_DIR=${KIT_DIR:-/opt/agent-workstation}
+# shellcheck disable=SC1091
+. "$KIT_DIR/lib/common.sh"
+
+[ "$(id -u)" = 0 ] || die "run it with sudo: sudo kit-updates ${1:-status}"
+hermes_user=""
+if enabled INSTALL_HERMES && id hermes >/dev/null 2>&1; then hermes_user=hermes; fi
+
+set_conf() {  # AUTO_UPDATE=yes|no in kit.conf, added if the file predates the setting
+  if grep -q '^AUTO_UPDATE=' "$KIT_DIR/kit.conf"; then
+    sed -i "s|^AUTO_UPDATE=.*|AUTO_UPDATE=$1|" "$KIT_DIR/kit.conf"
+  else
+    printf '\nAUTO_UPDATE=%s\n' "$1" >> "$KIT_DIR/kit.conf"
+  fi
+}
+
+timer_line() {  # USER TIMER: "enabled, next run ..." or "off"
+  local state next
+  state=$(user_systemctl "$1" is-enabled "$2" 2>/dev/null || true)
+  if [ "$state" = enabled ]; then
+    next=$(user_systemctl "$1" show "$2" -p NextElapseUSecRealtime --value 2>/dev/null || true)
+    echo "on, next run ${next:-unknown}"
+  else
+    echo "off"
+  fi
+}
+
+case "${1:-status}" in
+  status)
+    echo "AUTO_UPDATE=$AUTO_UPDATE (kit.conf)"
+    echo "  $DEV_USER: gentle-update.timer $(timer_line "$DEV_USER" gentle-update.timer)"
+    [ -n "$hermes_user" ] && echo "  hermes: hermes-gentle-update.timer $(timer_line hermes hermes-gentle-update.timer)"
+    echo "  last run: journalctl _SYSTEMD_USER_UNIT=gentle-update.service -n 30"
+    ;;
+  on)
+    set_conf yes
+    user_systemctl "$DEV_USER" enable --now gentle-update.timer >/dev/null 2>&1 ||
+      die "gentle-update.timer is not installed for $DEV_USER: sudo $KIT_DIR/install.sh --only 80"
+    if [ -n "$hermes_user" ]; then
+      user_systemctl hermes enable --now hermes-gentle-update.timer >/dev/null 2>&1 ||
+        warn "hermes-gentle-update.timer is not installed: sudo $KIT_DIR/install.sh --only 92"
+    fi
+    ok "automatic updates on: every 3 hours"
+    ;;
+  off)
+    set_conf no
+    user_systemctl "$DEV_USER" disable --now gentle-update.timer >/dev/null 2>&1 || true
+    [ -n "$hermes_user" ] && { user_systemctl hermes disable --now hermes-gentle-update.timer >/dev/null 2>&1 || true; }
+    ok "automatic updates off. Update by hand with: sudo kit-updates now"
+    ;;
+  now)
+    log "updating as $DEV_USER (gentle-update)"
+    as_user "$DEV_USER" bash "$KIT_DIR/bin/gentle-update" || warn "gentle-update reported a failure (see above)"
+    if [ -n "$hermes_user" ]; then
+      log "updating Hermes's copy of engram and gentle-ai"
+      as_user hermes bash "$KIT_DIR/bin/hermes-gentle-update" || warn "hermes-gentle-update reported a failure (see above)"
+    fi
+    ;;
+  *) die "usage: sudo kit-updates status | on | off | now" ;;
+esac

@@ -64,7 +64,7 @@ git clone https://github.com/lvega05/agent-workstation
 
 The console asks you everything along the way:
 
-1. **A few settings:** user names, time zone, the machine's name, and whether you want Hermes and backups. Enter keeps the defaults.
+1. **A few settings:** user names, time zone, the machine's name, whether you want Hermes and backups, and whether the agents update on their own. Enter keeps the defaults.
 2. **A password** for your admin user.
 3. **A Tailscale link** to approve the machine in your tailnet.
 4. **Two safety stops**, one before hardening SSH and one before turning the firewall on, so you can never lock yourself out. Each time, it asks you to log in over Tailscale from another terminal first.
@@ -202,7 +202,7 @@ Repeat the outside checks any time from your computer, with `<ip>` the server's 
 
 ## Updates
 
-Every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev` and at low priority:
+By default, every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev` and at low priority:
 
 - gentle-shell, engram, gentle-ai and GGA from their `main` branch;
 - gentle-shell's packages, the NaN provider included;
@@ -210,6 +210,17 @@ Every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev`
 - Claude Code, Herdr and, if you installed it, Moshi's hook, to their latest release.
 
 Hermes has its own copy of engram and gentle-ai, kept current the same way by `hermes-gentle-update`. If one part fails, the rest still update and the next run tries again. See what it did with `journalctl --user -u gentle-update` (as `dev`).
+
+The installer asks whether you want this (`AUTO_UPDATE` in `kit.conf`), and you can change your mind any time:
+
+```bash
+sudo kit-updates off      # stop the timers; nothing updates until you say so
+sudo kit-updates now      # update everything once
+sudo kit-updates on       # back to every 3 hours
+sudo kit-updates status   # what is on, and when the next run is
+```
+
+Claude Code keeps updating itself either way, as it does on any machine.
 
 To update the kit itself:
 
@@ -224,6 +235,8 @@ Every module is idempotent, so running it again is how you update. Run a single 
 The installer stops at the module that failed and tells you how to resume, for example `sudo /opt/agent-workstation/install.sh --from 80`. Modules that already ran are safe to run again.
 
 For the first day of use (a plain shell instead of Herdr, an agent opened on `main`, a Telegram token that is refused, a QR you cannot scan from the phone itself), **[docs/troubleshooting.md](docs/troubleshooting.md)** has the answers.
+
+This is new and in daily use by one person. If it breaks on your VPS, open an issue with the output of the module that failed.
 
 ## Learn more
 

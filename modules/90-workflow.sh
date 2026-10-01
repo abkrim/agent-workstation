@@ -10,7 +10,7 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
 
-for t in wt repo-add ci-local claude-trust kit-repos kit-guardrails shared-repos-sync kit-login kit-moshi kit-phone-key; do
+for t in wt repo-add ci-local claude-trust kit-repos kit-guardrails shared-repos-sync kit-login kit-moshi kit-phone-key kit-updates; do
   chmod 755 "$KIT_DIR/bin/$t"
   ln -sfn "$KIT_DIR/bin/$t" "/usr/local/bin/$t"
 done

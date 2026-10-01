@@ -220,5 +220,6 @@ wt rm <repo> <task> --force               # throw the task away
 
 engram tui                                # browse the repo's memory
 sudo kit-login <github|nan|claude|hermes> # change an account (plain ssh, as admin)
+sudo kit-updates off|on|now|status        # the 3-hour updates of the agents
 kit-moshi                                 # notifications on your phone
 ```

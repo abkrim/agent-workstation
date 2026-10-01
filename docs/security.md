@@ -66,7 +66,7 @@ The kit installs software from other projects. Know where it comes from:
 
 - **Ubuntu, Docker, Tailscale, GitHub CLI, mise:** their signed apt repositories.
 - **Claude Code and Hermes:** their official install scripts, fetched over HTTPS and run as `dev` and `hermes`, never as root.
-- **gentle-shell, engram, gentle-ai, GGA:** built from the `main` branch of their GitHub repositories, as `dev` (and `hermes` for its own copy), every 3 hours. You get fixes fast, and you also get whatever lands on `main`. Pin a version by editing `bin/gentle-update` if you prefer.
+- **gentle-shell, engram, gentle-ai, GGA:** built from the `main` branch of their GitHub repositories, as `dev` (and `hermes` for its own copy), every 3 hours. You get fixes fast, and you also get whatever lands on `main`. If you would rather choose the moment, turn the automatic updates off (`sudo kit-updates off`) and run them when you want (`sudo kit-updates now`), or pin a version by editing `bin/gentle-update`.
 - **Pi packages, CodeGraph, context7:** from npm, as `dev`.
 - **Models:** your prompts and code go to NaN, which states it keeps no logs of them, trains nothing on them and processes in the European Union ([privacy policy](https://nan.builders/privacy)), and to Anthropic when you use Claude Code. Read both providers' terms.
 
@@ -75,5 +75,5 @@ Nothing runs as root except the kit's own modules and the system services it con
 ## Updates and backups
 
 - Ubuntu security updates install automatically. Reboots are up to you: the installer tells you when one is pending, and later `cat /var/run/reboot-required` does.
-- The Gentleman tools follow their `main` branch and refresh every 3 hours. Other tools update when you re-run the installer, and Claude Code updates itself.
+- The Gentleman tools follow their `main` branch and, unless you turned automatic updates off, refresh every 3 hours along with Claude Code, Herdr and Moshi's hook. The rest updates when you re-run the installer. Claude Code also updates itself on its own.
 - Local backups (optional) are encrypted with restic. **Save the restic password somewhere else**: without it they cannot be read. Since they live on the same disk, they also need your provider's snapshots to protect against losing the server.

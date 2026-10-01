@@ -152,6 +152,10 @@ WantedBy=timers.target
 EOF
 chown "$U:$U" "$hunits"/hermes-gentle-update.*
 user_systemctl "$U" daemon-reload
-user_systemctl "$U" enable --now hermes-gentle-update.timer >/dev/null 2>&1
+if enabled AUTO_UPDATE; then
+  user_systemctl "$U" enable --now hermes-gentle-update.timer >/dev/null 2>&1
+else
+  user_systemctl "$U" disable --now hermes-gentle-update.timer >/dev/null 2>&1 || true
+fi
 
 ok "$(as_user "$U" hermes --version 2>/dev/null | head -1), NaN with GLM 5.3 Flash (Telegram is set up in kit-login)"

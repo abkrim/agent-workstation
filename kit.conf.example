@@ -25,6 +25,12 @@ INSTALL_HERMES=yes
 # They live on the same disk: they protect against mistakes, not against losing the server.
 INSTALL_BACKUPS=yes
 
+# --- Updates ---
+# Keep the agents current on their own, every 3 hours: the Gentleman tools (gentle-shell, engram,
+# gentle-ai, GGA) from their main branch; Claude Code, Herdr and Moshi to their latest release.
+# "no" leaves it to you: sudo kit-updates now (once), sudo kit-updates on (back to automatic).
+AUTO_UPDATE=yes
+
 # --- NaN (nan.builders) ---
 # How many requests this machine may send to NaN at once, and per minute.
 # Keep them within your plan's limits (shared with any other machine using the same key).
