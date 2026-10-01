@@ -56,17 +56,25 @@ if [ ! -f "$KIT_DIR/kit.conf" ]; then
   ask TIMEZONE "Time zone (e.g. America/Mexico_City)" "$(timedatectl show -p Timezone --value 2>/dev/null || echo UTC)"
   timedatectl list-timezones | grep -qx "$TIMEZONE" || { echo "  unknown time zone, using UTC"; TIMEZONE=UTC; }
   ask TAILSCALE_HOSTNAME "Name of this machine in your tailnet" workstation
+  # SSH keys for both users: root's (what the VPS panel set up) and/or any you paste.
   SSH_PUBLIC_KEY=""
-  if grep -qE '^(ssh-|ecdsa-|sk-)' /root/.ssh/authorized_keys 2>/dev/null; then
-    echo "  SSH keys on root: $(grep -cE '^(ssh-|ecdsa-|sk-)' /root/.ssh/authorized_keys) ($(grep -E '^(ssh-|ecdsa-|sk-)' /root/.ssh/authorized_keys | awk '{print $3}' | paste -sd, -))"
-    yes_no reuse "Use them for $ADMIN_USER and $DEV_USER?" yes
-  else
-    reuse=no
+  key_re='^(ssh-|ecdsa-|sk-)'
+  if grep -qE "$key_re" /root/.ssh/authorized_keys 2>/dev/null; then
+    echo "  SSH keys on root: $(grep -E "$key_re" /root/.ssh/authorized_keys | awk '{print $3}' | paste -sd, -)"
+    reuse=yes
+    yes_no reuse "Allow them for $ADMIN_USER and $DEV_USER?" yes
+    [ "$reuse" = no ] || SSH_PUBLIC_KEY=$(grep -E "$key_re" /root/.ssh/authorized_keys)
   fi
-  if [ "$reuse" = no ]; then
-    read -r -p "  Paste your SSH public key (ssh-ed25519 AAAA...): " SSH_PUBLIC_KEY </dev/tty
-    [[ "$SSH_PUBLIC_KEY" =~ ^(ssh-|ecdsa-|sk-) ]] || { echo "That is not an SSH public key." >&2; exit 1; }
-  fi
+  while :; do
+    read -r -p "  Paste another SSH public key to allow (Enter when done): " extra </dev/tty
+    [ -n "$extra" ] || break
+    if [[ "$extra" =~ $key_re ]]; then
+      SSH_PUBLIC_KEY=$(printf '%s\n%s' "$SSH_PUBLIC_KEY" "$extra" | sed '/^$/d')
+    else
+      echo "  that is not an SSH public key (it starts with ssh-ed25519, ssh-rsa, ecdsa-...)"
+    fi
+  done
+  [ -n "$SSH_PUBLIC_KEY" ] || { echo "At least one SSH key is needed to log in." >&2; exit 1; }
   yes_no INSTALL_HERMES "Install Hermes, a Telegram assistant that can read the repos you share?" yes
   yes_no INSTALL_BACKUPS "Daily local backups of your work (restic)?" yes
   ask NAN_MAX_CONCURRENT "NaN: simultaneous requests this machine may use (your plan's limit)" 4
@@ -75,11 +83,12 @@ if [ ! -f "$KIT_DIR/kit.conf" ]; then
       -e "s|^DEV_USER=.*|DEV_USER=$DEV_USER|" \
       -e "s|^TIMEZONE=.*|TIMEZONE=$TIMEZONE|" \
       -e "s|^TAILSCALE_HOSTNAME=.*|TAILSCALE_HOSTNAME=$TAILSCALE_HOSTNAME|" \
-      -e "s|^SSH_PUBLIC_KEY=.*|SSH_PUBLIC_KEY=\"$SSH_PUBLIC_KEY\"|" \
       -e "s|^INSTALL_HERMES=.*|INSTALL_HERMES=$INSTALL_HERMES|" \
       -e "s|^INSTALL_BACKUPS=.*|INSTALL_BACKUPS=$INSTALL_BACKUPS|" \
       -e "s|^NAN_MAX_CONCURRENT=.*|NAN_MAX_CONCURRENT=$NAN_MAX_CONCURRENT|" \
-      "$KIT_DIR/kit.conf.example" > "$KIT_DIR/kit.conf"
+      "$KIT_DIR/kit.conf.example" |
+    KEYS="$SSH_PUBLIC_KEY" awk '/^SSH_PUBLIC_KEY=/ { print "SSH_PUBLIC_KEY=\"" ENVIRON["KEYS"] "\""; next } { print }' \
+    > "$KIT_DIR/kit.conf"
   chmod 644 "$KIT_DIR/kit.conf"
   printf '\n  Saved in %s (edit it and run ./install.sh again to change anything).\n' "$KIT_DIR/kit.conf"
   printf '  Next: the install itself. It stops to ask for a password, a Tailscale login and your accounts.\n\n'
