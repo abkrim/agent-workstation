@@ -38,7 +38,7 @@ Several tasks can run at once, each with its own agent. The agents share one mem
 
 - A **[NaN](https://nan.builders/docs)** API key. gentle-shell, Hermes and the review of every pull request all run on NaN out of the box, so there is one provider to pay, one key to enter and one place where limits are watched. Without it the installer still finishes, but those three sit idle until you add a key (Claude Code works on its own).
 - **Why it is the default: privacy.** From NaN's [privacy policy](https://nan.builders/privacy): "The cluster keeps zero logs: we do not store your prompts or the model responses" and "Your code trains no models", with processing in the European Union. Your ideas stay yours while agents work on them all day.
-- If you go with NaN, the author's referral link is [cloud.nan.builders/r/2XHAG6MF](https://cloud.nan.builders/r/2XHAG6MF). Limits are per key: 60 requests per minute, and 7 requests at once on the base plan or 10 on the premium one ([models](https://nan.builders/docs/models)). Pick the plan with room for the agents you will run at the same time; the installer asks for that number and nan-gate keeps the machine inside it.
+- Want a discount? Sign up with my referral link: [cloud.nan.builders/r/2XHAG6MF](https://cloud.nan.builders/r/2XHAG6MF).
 
 **Free accounts the setup relies on:**
 
@@ -136,7 +136,7 @@ To change any of it, run `gentle-ai` as `dev`: its own screens show every option
 - **Hermes:** GLM 5.3 Flash.
 - **GGA**, which reviews each pull request against `AGENTS.md` before it merges: GLM 5.3 Flash, through GGA's OpenAI-compatible provider. GGA runs inside `ci-local`, once per pull request, never on each commit.
 
-All of them go through **nan-gate** (127.0.0.1:4880), which keeps the whole machine within your plan's simultaneous requests and per-minute limit, with Hermes first in line.
+All of them go through **nan-gate** (127.0.0.1:4880), which keeps the whole machine within your plan's limits, with Hermes first in line. NaN's limits are per key: 60 requests per minute, and 7 requests at once on the base plan or 10 on the premium one ([models](https://nan.builders/docs/models)). The installer asks how many this machine may use, so pick the plan with room for the agents you will run at the same time.
 
 ## Your accounts
 
