@@ -2,7 +2,7 @@
 
 A cloud machine where AI coding agents do the work and you steer, from your laptop or your phone. Clone this repo on a fresh Ubuntu 24.04 VPS, run one script, answer a few questions, and in about half an hour you have the server, the agents, the models, the memory and the workflow set up and kept up to date. Then you spend your time on your ideas instead of on the setup.
 
-It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
+It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. Two things are indispensable, a Linux server and a NaN key; the rest is optional. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
 
 ## How you work
 
@@ -26,12 +26,21 @@ Several tasks can run at once, each with its own agent. The agents share one mem
 
 ## What you need
 
-- A fresh **Ubuntu 24.04** server (a VPS works well; 4 GB of RAM or more, 8+ if you run several agents at once).
-- Your **SSH public key** on the server's root account (most VPS panels ask for it when you create the server).
-- A free **[Tailscale](https://tailscale.com/kb)** account, with Tailscale on the computer you connect from.
-- A **GitHub** account.
-- A **[NaN](https://nan.builders/docs)** API key, for gentle-shell, Hermes and the reviews of your pull requests.
-- Optional: a **Claude** plan for Claude Code, a **Telegram** account for Hermes, and a phone with **[Moshi](https://getmoshi.app)** (free).
+**Indispensable:**
+
+- **Linux:** a fresh **Ubuntu 24.04** server. A VPS works well: 4 GB of RAM or more, 8+ if you run several agents at once. Your SSH public key on its root account (most VPS panels ask for it when you create the server).
+- **[NaN](https://nan.builders/docs):** an API key. Its open-source models are behind gentle-shell, Hermes and the review of every pull request. Together with the VPS, it is the only thing you pay for.
+
+**Free accounts the setup relies on:**
+
+- **[Tailscale](https://tailscale.com/kb)**, the only way into the machine, on the computer you connect from.
+- **GitHub**, where your repos live.
+
+**Optional:**
+
+- A **Claude** plan, if you want Claude Code next to gentle-shell.
+- A **Telegram** account, for Hermes.
+- A phone with **[Moshi](https://getmoshi.app)** (free plan).
 
 ## Install
 
