@@ -15,6 +15,9 @@ if [ ! -f "$CONF" ]; then
   echo
   echo "      ssh $ADMIN_USER@$host"
   echo
+  echo "  If your computer answers 'REMOTE HOST IDENTIFICATION HAS CHANGED', it remembers a previous"
+  echo "  install of this server. Run: ssh-keygen -R $host   and try again."
+  echo
   confirm "Did it log you in?" || die "Stopped before hardening SSH. Resume with: ./install.sh --from 40"
 fi
 
