@@ -112,7 +112,7 @@ The installer is a series of numbered scripts in `modules/`. They run in this or
 | `85-nan` | **nan-gate**, so everything on the machine that uses NaN stays within your plan's limits. GGA reviews with NaN. Two model profiles for gentle-shell: `opensource-glm` (active, GLM 5.3 Flash orchestrates) and `opensource` (DeepSeek V4 Flash orchestrates); switch with `/gentle:profiles`. |
 | `88-gentle-ai` | Gentle AI for Claude Code and gentle-shell, with the defaults of its own installer (see below), plus [CodeGraph](https://github.com/colbymchenry/codegraph). |
 | `90-workflow` | `wt`, `repo-add`, `ci-local`, `claude-trust`, `kit-moshi` and `kit-phone-key`; `~/work` and `~/trees`; guardrails shared by every agent. |
-| `92-hermes` | *(optional)* Hermes on Telegram, with NaN and GLM 5.3 Flash, Gentle AI, and read-only copies of the repos you share. |
+| `92-hermes` | *(optional)* Hermes on Telegram, with NaN and GLM 5.3 Flash, Gentle AI (its persona and guidance go into `SOUL.md`, with Hermes's context limit raised to fit), and read-only copies of the repos you share. |
 | `95-backups` | *(optional)* Daily local, encrypted [restic](https://restic.net) snapshots. |
 | `99-credentials` | `kit-login`: GitHub, NaN, Claude Code and Hermes. |
 

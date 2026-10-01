@@ -47,6 +47,10 @@ hcfg approvals.mode manual
 hcfg approvals.cron_mode deny
 # Side tasks (summaries, approval checks, reviews) use the same NaN model, never another provider.
 for t in compression approval review skills_hub; do hcfg "auxiliary.$t.provider" main; done
+# Gentle AI writes about 60 KB into SOUL.md (persona, orchestrator guidance, engram conventions,
+# skills); Hermes would cut it at 48,660 characters and lose instructions. GLM 5.3 Flash has the
+# context for it.
+hcfg context_file_max_chars 120000
 
 ENV=$H/.hermes/.env
 [ -f "$ENV" ] || install -o "$U" -g "$U" -m 600 /dev/null "$ENV"
