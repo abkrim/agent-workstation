@@ -2,7 +2,7 @@
 
 A cloud machine where AI coding agents do the work and you steer, from your laptop or your phone. Clone this repo on a fresh Ubuntu 24.04 VPS, run one script, answer a few questions, and in about half an hour you have the server, the agents, the models, the memory and the workflow set up and kept up to date. Then you spend your time on your ideas instead of on the setup.
 
-It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. The only thing you cannot do without is a Linux server. The models come from NaN by default, one provider for everything, which is what keeps the setup simple; the rest is optional. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
+It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. The only thing you cannot do without is a Linux server. The models come from [NaN](https://nan.builders) by default: a private provider that keeps no logs of your prompts or the responses, trains nothing on your code and processes everything in the European Union. That privacy is why this project exists. One provider for everything is also what keeps the setup simple; the rest is optional. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
 
 ## How you work
 
@@ -32,7 +32,9 @@ Several tasks can run at once, each with its own agent. The agents share one mem
 
 **The models, NaN by default:**
 
-- A **[NaN](https://nan.builders/docs)** API key. gentle-shell, Hermes and the review of every pull request all run on NaN out of the box, so there is one provider to pay, one key to enter and one place where limits are watched. Without it the installer still finishes, but those three sit idle until you add a key (Claude Code works on its own). If you go with NaN, the author's referral link is [cloud.nan.builders/r/2XHAG6MF](https://cloud.nan.builders/r/2XHAG6MF). Limits are per key, requests per minute and at once, so pick a plan with room for the agents you will run at the same time; the installer asks for that number and nan-gate keeps the machine inside it.
+- A **[NaN](https://nan.builders/docs)** API key. gentle-shell, Hermes and the review of every pull request all run on NaN out of the box, so there is one provider to pay, one key to enter and one place where limits are watched. Without it the installer still finishes, but those three sit idle until you add a key (Claude Code works on its own).
+- **Why it is the default: privacy.** From NaN's [privacy policy](https://nan.builders/privacy): "The cluster keeps zero logs: we do not store your prompts or the model responses" and "Your code trains no models", with processing in the European Union. Your ideas stay yours while agents work on them all day.
+- If you go with NaN, the author's referral link is [cloud.nan.builders/r/2XHAG6MF](https://cloud.nan.builders/r/2XHAG6MF). Limits are per key: 60 requests per minute, and 7 requests at once on the base plan or 10 on the premium one ([models](https://nan.builders/docs/models)). Pick the plan with room for the agents you will run at the same time; the installer asks for that number and nan-gate keeps the machine inside it.
 
 **Free accounts the setup relies on:**
 
@@ -124,7 +126,7 @@ To change any of it, run `gentle-ai` as `dev`: its own screens show every option
 
 ## Models and reviews
 
-**Why NaN by default.** Agents that work all day need a provider that is priced for volume, that answers through an OpenAI-compatible API every tool already speaks, and that runs open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools. [NaN's API](https://nan.builders/docs/api) is that provider here; the kit uses it in three places:
+**Why NaN by default.** First, privacy: NaN states that it keeps no logs of prompts or responses, trains no models on your code and processes in the European Union ([privacy policy](https://nan.builders/privacy)), which is what you want when agents read your whole codebase all day. Then practicality: a provider priced for volume, an OpenAI-compatible API every tool already speaks, and open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools. [NaN's API](https://nan.builders/docs/api) is that provider here; the kit uses it in three places:
 
 - **gentle-shell:** GLM 5.3 Flash by default, with the two profiles above.
 - **Hermes:** GLM 5.3 Flash.

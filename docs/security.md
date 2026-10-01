@@ -67,7 +67,7 @@ The kit installs software from other projects. Know where it comes from:
 - **Claude Code and Hermes:** their official install scripts, fetched over HTTPS and run as `dev` and `hermes`, never as root.
 - **gentle-shell, engram, gentle-ai, GGA:** built from the `main` branch of their GitHub repositories, as `dev` (and `hermes` for its own copy), every 3 hours. You get fixes fast, and you also get whatever lands on `main`. Pin a version by editing `bin/gentle-update` if you prefer.
 - **Pi packages, CodeGraph, context7:** from npm, as `dev`.
-- **Models:** your prompts and code go to NaN (and to Anthropic when you use Claude Code). Read their terms.
+- **Models:** your prompts and code go to NaN, which states it keeps no logs of them, trains nothing on them and processes in the European Union ([privacy policy](https://nan.builders/privacy)), and to Anthropic when you use Claude Code. Read both providers' terms.
 
 Nothing runs as root except the kit's own modules and the system services it configures.
 
