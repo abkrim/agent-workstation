@@ -9,6 +9,9 @@ set -uo pipefail
 KIT_DIR=${KIT_DIR:-/opt/agent-workstation}
 BASE=/srv/shared/repos
 umask 027
+# The list first, and nothing is touched if it cannot be read: an empty list means you share
+# nothing, a failed read must not look the same (it would remove every copy for an hour).
+list=$("$KIT_DIR/bin/kit-repos" --slug hermes) || { echo "shared-repos-sync: could not read your repo list, nothing changed" >&2; exit 1; }
 failed=0
 shared=()
 while read -r repo slug; do
@@ -23,7 +26,7 @@ while read -r repo slug; do
   else
     echo "$repo: update failed"; failed=1
   fi
-done < <("$KIT_DIR/bin/kit-repos" --slug hermes)
+done <<< "$list"
 
 for d in "$BASE"/*/; do
   [ -d "$d" ] || continue
