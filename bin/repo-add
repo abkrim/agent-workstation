@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # repo-add: bring one of your GitHub repos into the workstation, ready for any agent. As dev:
 #
-#   repo-add <owner/repo | GitHub URL> [--hermes] [--yes]
+#   repo-add <owner/repo | GitHub URL> [--new [--public]] [--hermes] [--yes]
 #
+#   0. --new: creates the repo on GitHub first (private unless --public, with a README), so you
+#      can start a project from nothing;
 #   1. checks that your GitHub account can see it;
 #   2. adds it to ~/.config/workstation-kit/repos;
 #   3. clones it into ~/work/<repo> with a hook that blocks deleting main on the remote, and marks
@@ -20,25 +22,40 @@ LIST=$HOME/.config/workstation-kit/repos
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 die() { echo "repo-add: $*" >&2; exit 1; }
 
-src="" hermes=0 yes=0
+src="" hermes=0 yes=0 new=0 visibility=private
 for a in "$@"; do
   case "$a" in
     --hermes) hermes=1 ;;
     --yes) yes=1 ;;
+    --new) new=1 ;;
+    --public) visibility=public ;;
     -*) die "unknown option $a" ;;
     *) src=$a ;;
   esac
 done
-[ -n "$src" ] || die "usage: repo-add <owner/repo | GitHub URL> [--hermes] [--yes]"
+[ -n "$src" ] || die "usage: repo-add <owner/repo | GitHub URL> [--new [--public]] [--hermes] [--yes]"
 slug=$(printf '%s' "$src" | sed -E 's#^(https?://github\.com/|git@github\.com:)##; s#\.git$##; s#/+$##')
 [[ "$slug" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "cannot read '$src' (expected owner/repo)"
 name=${slug#*/}
 url="git@github.com:$slug.git"
 dir=$HOME/work/$name
 
+if [ "$new" = 1 ]; then
+  if gh repo view "$slug" >/dev/null 2>&1; then
+    echo "= $slug already exists on GitHub"
+  else
+    echo "▸ creating $slug on GitHub ($visibility, with a README)"
+    gh repo create "$slug" "--$visibility" --add-readme >/dev/null ||
+      die "could not create $slug. Is gh logged in (sudo kit-login github)? Is $slug your account or an org you can create repos in?"
+  fi
+fi
+
 echo "▸ access to $slug"
-git ls-remote --heads "$url" main | grep -q . ||
-  die "$slug is not visible to your GitHub account or has no main branch (invite your account as a collaborator, or check kit-login github)"
+for try in 1 2 3 4 5; do  # a repo created seconds ago can take a moment to answer over SSH
+  git ls-remote --heads "$url" main 2>/dev/null | grep -q . && break
+  [ "$try" = 5 ] && die "$slug is not visible to your GitHub account or has no main branch (invite your account as a collaborator, or check kit-login github)"
+  sleep 2
+done
 
 mkdir -p "$(dirname "$LIST")" "$HOME/work"
 touch "$LIST"

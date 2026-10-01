@@ -45,11 +45,13 @@ Then follow **[docs/getting-started.md](docs/getting-started.md)**.
 ## Daily use, in short
 
 ```bash
-repo-add <owner>/<repo>      # once per repo: clone it, ready for any agent
+repo-add <owner>/<repo>      # once per repo: clone it, ready for any agent (--new creates it on GitHub first)
 wt new <repo> <task>         # a branch, folder, ports and Herdr workspace for one task
-claude                       # or gentle-shell
+claude                       # or gentle-shell; both remember through engram
 wt rm <repo> <task>          # merges what is left (only if ci-local is green) and cleans up
 ```
+
+The whole way of working, from a server with no repos to a merged pull request, is in **[docs/getting-started.md](docs/getting-started.md)**.
 
 ## What it sets up
 
