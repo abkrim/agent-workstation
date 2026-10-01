@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Hermes Agent (optional, INSTALL_HERMES=yes): an assistant you talk to on Telegram, running as its
-# own user "hermes" with NaN as its model provider (through nan-gate, ahead of development).
+# own user "hermes" with NaN as its provider and GLM 5.3 Flash as its model (through nan-gate,
+# ahead of development). The NaN key is the one kit-login asks for. Gentle AI is set up for it too
+# (same preset and persona as the other agents), with Hermes's own copy of engram and gentle-ai.
 # What it can and cannot do:
 #   - read the repos you share with it (repo-add --hermes): read-only copies in /srv/shared/repos,
 #     refreshed hourly by the dev user. It cannot write them, push, or see ~/work;
@@ -84,4 +86,39 @@ chown "$DEV_USER:$DEV_USER" "$units"/shared-repos.*
 user_systemctl "$DEV_USER" daemon-reload
 user_systemctl "$DEV_USER" enable --now shared-repos.timer >/dev/null 2>&1
 
-ok "$(as_user "$U" hermes --version 2>/dev/null | head -1) (Telegram is set up in kit-login)"
+# --- Gentle AI for Hermes: its own Go to build engram and gentle-ai (Node comes with Hermes) ---
+as_user "$U" mise use -g --yes go@latest >/dev/null
+log "Gentle AI for Hermes (builds engram and gentle-ai: a few minutes the first time)"
+as_user "$U" bash "$KIT_DIR/bin/hermes-gentle-update" ||
+  warn "Gentle AI for Hermes did not finish; hermes-gentle-update.timer retries every 3 hours"
+hunits="$H/.config/systemd/user"
+install -d -o "$U" -g "$U" -m 755 "$H/.config" "$H/.config/systemd" "$hunits"
+cat > "$hunits/hermes-gentle-update.service" <<EOF
+# Managed by workstation-kit (modules/92-hermes.sh)
+[Unit]
+Description=Gentle AI for Hermes: engram, gentle-ai and gentle-ai sync
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash $KIT_DIR/bin/hermes-gentle-update
+Nice=10
+EOF
+cat > "$hunits/hermes-gentle-update.timer" <<'EOF'
+# Managed by workstation-kit (modules/92-hermes.sh)
+[Unit]
+Description=hermes-gentle-update every 3 hours
+
+[Timer]
+OnCalendar=01/3:30
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+chown "$U:$U" "$hunits"/hermes-gentle-update.*
+user_systemctl "$U" daemon-reload
+user_systemctl "$U" enable --now hermes-gentle-update.timer >/dev/null 2>&1
+
+ok "$(as_user "$U" hermes --version 2>/dev/null | head -1), NaN with GLM 5.3 Flash (Telegram is set up in kit-login)"

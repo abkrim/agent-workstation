@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # Gentle AI on top of the agents, with the defaults of gentle-ai's own installer and no questions:
-#   agents      Claude Code, OpenCode and gentle-shell (Pi, in gentle-shell's own home)
+#   agents      Claude Code and gentle-shell (Pi, in gentle-shell's own home); Hermes gets the same
+#               in modules/92-hermes.sh, with its own copy of the tools
 #   preset      full-gentleman: claude-theme, context7, persona, engram, gga, opencode-gentle-logo,
 #               permissions and skills
 #   persona     neutral (no regional tone; technical artifacts in English)
 #   RDD         on (gentle-ai's default)
 #   community   CodeGraph (code graph and its MCP for every agent)
-#   OpenCode    background sub-agents when the installed OpenCode supports them
 # Change any of it later by running `gentle-ai` as dev: its own screens show every option.
-# gentle-ai's "permissions" component rewrites Claude Code's rules; the kit's guardrails are merged
-# back right after (kit-guardrails). Its output goes to ~/.gentle-ai/kit-install.log.
+# gentle-ai's "permissions" component rewrites Claude Code's rules and sets it to bypass every
+# prompt. kit-guardrails runs right after: it merges the kit's deny rules back and moves Claude Code
+# to auto mode (a safety classifier instead of prompts), which is what Anthropic recommends for a
+# machine with internet access. Output goes to ~/.gentle-ai/kit-install.log.
 set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
@@ -34,8 +36,8 @@ fail() { tail -n 15 "$LOG" >&2; die "$1 (full output in $LOG)"; }
 
 : >"$LOG"
 chown "$DEV_USER:$DEV_USER" "$LOG"
-log "Gentle AI for Claude Code, OpenCode and gentle-shell (a few minutes)"
-ga gentle-ai install --agents claude-code,opencode,pi --preset full-gentleman --persona neutral ||
+log "Gentle AI for Claude Code and gentle-shell (a few minutes)"
+ga gentle-ai install --agents claude-code,pi --preset full-gentleman --persona neutral ||
   fail "gentle-ai install failed"
 
 log "CodeGraph"

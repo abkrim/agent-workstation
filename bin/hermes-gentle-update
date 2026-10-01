@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# hermes-gentle-update: Gentle AI for Hermes, as the hermes user and with its own copy of the tools
+# (nothing from the dev user runs here):
+#   engram, gentle-ai   go install <module declared by main>/cmd/<tool>@main → ~/.local/bin
+#   first run           gentle-ai install --agents hermes --preset full-gentleman --persona neutral
+#   later runs          gentle-ai sync
+# gentle-ai writes engram and context7 (MCP) into ~/.hermes/config.yaml, the persona into SOUL.md and
+# its skills into ~/.hermes/skills. It does not touch the model, the NaN key or the approvals.
+# Hermes's gateway already has ~/.local/bin and its own Node on PATH, so engram and npx are found.
+# hermes-gentle-update.timer runs it every 3 hours (modules/92-hermes.sh). Exits 1 if anything failed.
+set -uo pipefail
+
+node_dirs=$(find "$HOME/.hermes/tools" -maxdepth 2 -type d -name bin 2>/dev/null | paste -sd: -)
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:${node_dirs:+$node_dirs:}$PATH"
+export GOBIN="$HOME/.local/bin"
+mkdir -p "$GOBIN"
+
+log() { echo "[$(date '+%F %T')] $*"; }
+failed=()
+
+module_of() {  # the module path main's go.mod declares (follows major versions: v3 → v4)
+  curl -fsSL "https://raw.githubusercontent.com/$1/main/go.mod" | awk '/^module/ { print $2; exit }'
+}
+
+update_go_tool() {  # $1 binary name, $2 OWNER/REPO
+  local mod before after
+  mod=$(module_of "$2")
+  [ -n "$mod" ] || { log "$1: could not read the module path of $2 main"; return 1; }
+  before=$(go version -m "$GOBIN/$1" 2>/dev/null | awk '$1=="mod"{print $3}')
+  go install "$mod/cmd/$1@main" 2>&1 | tail -n 5 || return 1
+  after=$(go version -m "$GOBIN/$1" 2>/dev/null | awk '$1=="mod"{print $3}')
+  [ -n "$after" ] || return 1
+  if [ "$before" = "$after" ]; then log "$1 up to date ($after)"; else log "$1 ${before:-(new)} → $after"; fi
+}
+
+configure_hermes() {
+  if [ -f "$HOME/.gentle-ai/state.json" ]; then
+    gentle-ai sync </dev/null >/dev/null 2>&1 || return 1
+    log "gentle-ai sync done"
+  else
+    gentle-ai install --agents hermes --preset full-gentleman --persona neutral </dev/null >/dev/null 2>&1 || return 1
+    log "gentle-ai installed for Hermes (full-gentleman, neutral)"
+  fi
+}
+
+update_go_tool engram    Gentleman-Programming/engram    || failed+=(engram)
+update_go_tool gentle-ai Gentleman-Programming/gentle-ai || failed+=(gentle-ai)
+if command -v gentle-ai >/dev/null; then configure_hermes || failed+=(gentle-ai-hermes); fi
+
+if [ ${#failed[@]} -gt 0 ]; then log "FAILED: ${failed[*]}"; exit 1; fi
+log "OK"

@@ -3,11 +3,10 @@
 #   - Claude Code (official native installer, updates itself)
 #   - gentle-shell: Pi with the Gentleman ecosystem, plus the NaN provider for Pi
 #   - engram, gentle-ai and GGA (Gentleman Guardian Angel, reviews pull requests)
-#   - OpenCode
 #   - Herdr, the terminal workspace manager, with its integrations so its sidebar shows what each
 #     agent is doing
 # gentle-update.timer keeps all of them current every 3 hours: the Gentleman tools from their main
-# branch, gentle-shell's packages, Claude Code, OpenCode and Herdr (bin/gentle-update).
+# branch, gentle-shell's packages, Claude Code and Herdr (bin/gentle-update).
 set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
@@ -21,9 +20,9 @@ if [ ! -x "$h/.local/bin/claude" ]; then
 fi
 ok "Claude Code $(as_user "$DEV_USER" claude --version 2>/dev/null | head -1)"
 
-# --- OpenCode and Herdr (releases, through mise) ---
-as_user "$DEV_USER" mise use -g --yes github:anomalyco/opencode@latest herdr@latest >/dev/null
-ok "OpenCode $(as_user "$DEV_USER" opencode --version 2>/dev/null) · Herdr $(as_user "$DEV_USER" herdr --version 2>/dev/null | awk '{print $NF}')"
+# --- Herdr (release, through mise) ---
+as_user "$DEV_USER" mise use -g --yes herdr@latest >/dev/null
+ok "Herdr $(as_user "$DEV_USER" herdr --version 2>/dev/null | awk '{print $NF}')"
 
 # --- gentle-shell (Pi comes with it), engram, gentle-ai, GGA: gentle-update installs or updates ---
 log "Gentleman ecosystem from main (several minutes the first time)"
@@ -74,5 +73,4 @@ user_systemctl "$DEV_USER" enable --now gentle-update.timer >/dev/null 2>&1
 [ -x "$h/.local/bin/gentle-shell" ] &&
   as_user "$DEV_USER" env PI_CODING_AGENT_DIR="$h/.gentle-shell/agent" herdr integration install pi >/dev/null
 as_user "$DEV_USER" herdr integration install claude >/dev/null
-as_user "$DEV_USER" herdr integration install opencode >/dev/null
-ok "Herdr integrations for Pi, Claude Code and OpenCode"
+ok "Herdr integrations for gentle-shell and Claude Code"

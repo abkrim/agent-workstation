@@ -9,7 +9,7 @@
 #                 guardrails are merged back (kit-guardrails)
 #   CodeGraph     npm install -g @colbymchenry/codegraph@latest
 #   Claude Code   claude update
-#   OpenCode, Herdr  latest release (mise upgrade)
+#   Herdr         latest release (mise upgrade)
 # The Go module path is read from main's go.mod on every run, so a new major version (v3 → v4)
 # is followed instead of silently staying on the old one. Each part is independent: one failure
 # does not stop the rest. gentle-update.timer runs it every 3 hours (modules/80-agents.sh).
@@ -123,9 +123,9 @@ update_claude() {
   log "claude: $(printf '%s\n' "$out" | grep -v '^\s*$' | tail -1)"
 }
 
-update_releases() {  # OpenCode and Herdr follow their latest release through mise
-  mise upgrade --yes github:anomalyco/opencode herdr >/dev/null 2>&1 || return 1
-  log "opencode $(opencode --version 2>/dev/null) · $(herdr --version 2>/dev/null)"
+update_releases() {  # Herdr follows its latest release through mise
+  mise upgrade --yes herdr >/dev/null 2>&1 || return 1
+  log "$(herdr --version 2>/dev/null)"
 }
 
 update_gentle_shell || failed+=(gentle-shell)
@@ -136,7 +136,7 @@ update_gga || failed+=(gga)
 update_gentle_ai_assets || failed+=(gentle-ai-sync)
 update_codegraph || failed+=(codegraph)
 update_claude || failed+=(claude)
-update_releases || failed+=(opencode/herdr)
+update_releases || failed+=(herdr)
 
 if [ ${#failed[@]} -gt 0 ]; then log "FAILED: ${failed[*]}"; exit 1; fi
 log "OK"

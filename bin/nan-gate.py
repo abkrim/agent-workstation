@@ -5,13 +5,17 @@ client on the machine points its base URL at this gate instead of
 https://api.nan.builders/v1:
 
     http://127.0.0.1:4880/<pool>/v1/...     pool = hermes | dev
+    http://127.0.0.1:4881/v1/...            GGA's pull-request reviews
 
 At most MAX_CONCURRENT requests go upstream at once; the rest wait in line, the
-higher-priority pool first (hermes, then dev), and in arrival order within a
-pool. A requests-per-minute ceiling keeps the machine under the per-key limit.
-The client's own Authorization header is forwarded as is: the gate holds no key.
-Responses, streamed ones included, are passed through as they arrive.
-Standard library only. Installed by workstation-kit (modules/85-nan.sh).
+higher-priority pool first (hermes, then dev, then GGA), and in arrival order
+within a pool. A requests-per-minute ceiling keeps the machine under the per-key
+limit. On 4880 the client's own Authorization header is forwarded as is. GGA's
+OpenAI-compatible provider sends no key, so on 4881 the gate adds the machine's
+NaN key, which systemd hands it as a credential readable only by this service
+(/etc/workstation-kit/nan.key, written by kit-login). Responses, streamed ones
+included, are passed through as they arrive. Standard library only. Installed by
+workstation-kit (modules/85-nan.sh).
 """
 import heapq
 import http.client
@@ -31,7 +35,17 @@ MAX_CONCURRENT = int(os.environ.get("NAN_GATE_MAX_CONCURRENT", "4"))
 MAX_RPM = int(os.environ.get("NAN_GATE_MAX_RPM", "40"))
 WAIT_TIMEOUT = float(os.environ.get("NAN_GATE_WAIT_TIMEOUT", "900"))
 UPSTREAM_TIMEOUT = float(os.environ.get("NAN_GATE_UPSTREAM_TIMEOUT", "900"))
-POOLS = {"hermes": 0, "dev": 1}
+GGA_PORT = int(os.environ.get("NAN_GATE_GGA_PORT", "4881"))
+POOLS = {"hermes": 0, "dev": 1, "gga": 2}
+
+
+def machine_key() -> str:
+    """The NaN key systemd passes as a credential, or "" when none is set up yet."""
+    try:
+        with open(os.path.join(os.environ.get("CREDENTIALS_DIRECTORY", ""), "nan-key")) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
 HOP = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te",
        "trailers", "transfer-encoding", "upgrade", "host", "content-length"}
 
@@ -105,13 +119,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    fixed_pool = ""  # set on the GGA listener: every path belongs to that pool
+
     def _proxy(self) -> None:
         if self.path == "/status":
             return self._reply(200, '{"status": "%s"}' % GATE.status())
-        parts = self.path.split("/", 2)
-        if len(parts) < 3 or parts[1] not in POOLS:
-            return self._reply(404, '{"error": "use /hermes/ or /dev/ before /v1"}')
-        pool, rest = parts[1], "/" + parts[2]
+        if self.fixed_pool:
+            pool, rest = self.fixed_pool, self.path
+        else:
+            parts = self.path.split("/", 2)
+            if len(parts) < 3 or parts[1] not in POOLS or parts[1] == "gga":
+                return self._reply(404, '{"error": "use /hermes/ or /dev/ before /v1"}')
+            pool, rest = parts[1], "/" + parts[2]
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length) if length else None
         if not GATE.acquire(POOLS[pool]):
@@ -120,6 +139,10 @@ class Handler(BaseHTTPRequestHandler):
             upstream = http.client.HTTPSConnection(UPSTREAM, timeout=UPSTREAM_TIMEOUT, context=CONTEXT)
             headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP}
             headers["Host"] = UPSTREAM
+            if self.fixed_pool == "gga" and "authorization" not in {k.lower() for k in headers}:
+                key = machine_key()
+                if key:
+                    headers["Authorization"] = "Bearer " + key
             upstream.request(self.command, rest, body=body, headers=headers)
             response = upstream.getresponse()
             self.send_response(response.status, response.reason)
@@ -151,8 +174,15 @@ class Handler(BaseHTTPRequestHandler):
     do_GET = do_POST = do_PUT = do_DELETE = do_PATCH = _proxy
 
 
+class GGAHandler(Handler):
+    fixed_pool = "gga"
+
+
 if __name__ == "__main__":
     server = ThreadingHTTPServer((LISTEN, PORT), Handler)
     server.daemon_threads = True
-    sys.stderr.write(f"nan-gate on {LISTEN}:{PORT}, {MAX_CONCURRENT} slots, {MAX_RPM} rpm\n")
+    gga = ThreadingHTTPServer((LISTEN, GGA_PORT), GGAHandler)
+    gga.daemon_threads = True
+    threading.Thread(target=gga.serve_forever, daemon=True).start()
+    sys.stderr.write(f"nan-gate on {LISTEN}:{PORT} (GGA on {GGA_PORT}), {MAX_CONCURRENT} slots, {MAX_RPM} rpm\n")
     server.serve_forever()

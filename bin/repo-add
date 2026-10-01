@@ -75,7 +75,7 @@ if [ -f "$dir/.git/hooks/pre-commit" ] && grep -q GGA "$dir/.git/hooks/pre-commi
   (cd "$dir" && gga uninstall >/dev/null) && echo "✓ removed GGA's per-commit hook (it reviews PRs instead)"
 fi
 
-# The same rules for every agent: AGENTS.md (Pi, OpenCode, GGA) and a CLAUDE.md that imports it.
+# The same rules for every agent: AGENTS.md (gentle-shell, GGA) and a CLAUDE.md that imports it.
 missing=()
 [ -f "$dir/AGENTS.md" ] || missing+=(AGENTS.md)
 [ -f "$dir/CLAUDE.md" ] || missing+=(CLAUDE.md)

@@ -38,9 +38,8 @@ Whichever you like:
 
 - `claude`
 - `gentle-shell` (Pi)
-- `opencode`
 
-They all follow the same repo rules.
+Both follow the same repo rules. Hermes, if you installed it, is on Telegram: message your bot.
 
 ## 5. Tell it what you want
 

@@ -3,7 +3,7 @@
 #
 #   sudo kit-login             every step
 #   sudo kit-login github      GitHub: SSH key, gh login, git identity
-#   sudo kit-login nan         NaN key for Pi (gentle-shell), OpenCode, GGA and Hermes
+#   sudo kit-login nan         NaN key for gentle-shell (Pi), GGA and Hermes
 #   sudo kit-login claude      Claude Code login
 #   sudo kit-login hermes      Hermes on Telegram: bot token and your user id
 #
@@ -22,7 +22,7 @@ ask() { local v; read -r -p "$1" v </dev/tty; printf '%s' "$v"; }
 ask_secret() { local v; read -r -s -p "$1" v </dev/tty; echo >&2; printf '%s' "$v"; }
 
 # set_json_key FILE USER TYPE: reads a key on stdin, stores {"nan": {"type": TYPE, "key": ...}} in FILE.
-# Pi wants type "api_key" and OpenCode "api": with the wrong one, each ignores the key.
+# gentle-shell (Pi) wants type "api_key": with another one it ignores the key.
 set_json_key() {
   sudo -u "$2" python3 -c '
 import json, os, sys
@@ -124,11 +124,15 @@ step_nan() {
   code=$(curl -s -o /dev/null -w '%{http_code}' -K - https://api.nan.builders/v1/models <<<"header = \"Authorization: Bearer $key\"")
   [ "$code" = 200 ] || { warn "NaN rejected the key (HTTP $code): nothing saved"; return 0; }
   printf '%s' "$key" | set_json_key "$DH/.gentle-shell/agent/auth.json" "$D" api_key
-  printf '%s' "$key" | set_json_key "$DH/.local/share/opencode/auth.json" "$D" api
+  # For GGA's reviews: nan-gate adds it on its GGA port (systemd credential, root only).
+  install -d -m 755 /etc/workstation-kit
+  (umask 077; printf '%s\n' "$key" > /etc/workstation-kit/nan.key)
+  systemctl restart nan-gate.service 2>/dev/null || true
   if [ -f /home/hermes/.hermes/.env ]; then
     printf '%s' "$key" | set_env /home/hermes/.hermes/.env hermes HERMES_CUSTOM_NAN_BUILDERS_API_KEY
+    user_systemctl hermes try-restart hermes-gateway.service 2>/dev/null || true
   fi
-  ok "NaN key saved for Pi (gentle-shell), OpenCode and GGA$([ -f /home/hermes/.hermes/.env ] && echo ", and Hermes")"
+  ok "NaN key saved for gentle-shell, GGA's reviews$([ -f /home/hermes/.hermes/.env ] && echo " and Hermes (GLM 5.3 Flash)")"
 }
 
 step_claude() {

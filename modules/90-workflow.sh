@@ -3,7 +3,8 @@
 # folders ~/work (your repos, always clean on main) and ~/trees (one worktree per task), and the
 # guardrails every agent shares:
 #   - a pre-push hook in each repo blocks deleting main on the remote (repo-add installs it);
-#   - Claude Code and OpenCode refuse `git push --no-verify` and `gh repo delete`.
+#   - Claude Code refuses `git push --no-verify` and `gh repo delete`, and runs in auto mode
+#     (kit-guardrails).
 # Agents may push to main, merge PRs and delete branches: ci-local is the gate before a merge.
 set -euo pipefail
 # shellcheck disable=SC1091
