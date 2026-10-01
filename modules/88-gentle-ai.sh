@@ -30,7 +30,7 @@ install -d -o "$DEV_USER" -g "$DEV_USER" -m 700 "$h/.gentle-ai"
 ga() {
   (cd /tmp && sudo -u "$DEV_USER" -H env \
     PATH="$h/src/gentle-shell/node_modules/.bin:$h/.local/share/mise/shims:$h/.local/bin:/usr/local/bin:/usr/bin:/bin" \
-    PI_CODING_AGENT_DIR="$h/.gentle-shell/agent" GOBIN="$h/.local/bin" "$@" </dev/null >>"$LOG" 2>&1)
+    PI_CODING_AGENT_DIR="$h/.gentle-shell/agent" GOBIN="$h/.local/bin" "$(engram_env "$DEV_USER")" "$@" </dev/null >>"$LOG" 2>&1)
 }
 fail() { tail -n 15 "$LOG" >&2; die "$1 (full output in $LOG)"; }
 

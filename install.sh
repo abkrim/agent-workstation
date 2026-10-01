@@ -124,6 +124,8 @@ if [ -z "$ONLY" ]; then
   printf '\n\033[1;32mAll set.\033[0m From your computer (with Tailscale on):\n\n'
   printf '    ssh -t %s@%s herdr\n\n' "${DEV_USER:-dev}" "${host:-$TAILSCALE_HOSTNAME}"
   printf 'Then: repo-add <owner>/<repo>, and see %s/docs/getting-started.md\n' "$KIT_DIR"
+  expiry=$(tailscale status --json 2>/dev/null | jq -r '.Self.KeyExpiry // empty' | cut -c1-10)
+  [ -z "$expiry" ] || printf '\n\033[1;33m!\033[0m Tailscale key expiry is on (%s). Disable it for this machine at https://login.tailscale.com/admin/machines,\n  or you lose SSH access on that date (Tailscale is the only way in).\n' "$expiry"
   if [ -f /var/run/reboot-required ]; then
     printf '\n\033[1;33m!\033[0m The system updates included a new kernel: reboot when convenient (sudo reboot).\n'
     printf '  Everything the kit set up starts again on its own.\n'

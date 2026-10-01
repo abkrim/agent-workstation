@@ -58,6 +58,33 @@ wait_user_bus() {
   die "systemd for $1 did not start (/run/user/$uid/bus)"
 }
 
+# engram_env USER: the environment that keeps engram's HTTP API off TCP. By default `engram serve`
+# listens on 127.0.0.1:7437 with no authentication for reads, so any local user could read that
+# user's memories. On a unix socket inside the user's runtime directory (mode 700) only the user
+# itself can connect. Clients (the Claude Code hook, the CLI) honor the same variable.
+engram_env() { printf 'ENGRAM_SOCKET=/run/user/%s/engram.sock' "$(id -u "$1")"; }
+
+# install_user_env USER: the same variables for the user's shells (.bashrc, at the top, so they
+# also reach `ssh user@host <command>`) and for the user's systemd services (environment.d).
+install_user_env() {
+  local u=$1 h
+  h=$(home_of "$u")
+  install -d -o "$u" -g "$u" -m 700 "$h/.config" "$h/.config/environment.d"
+  printf '# Managed by workstation-kit (lib/common.sh install_user_env)\n%s\n' "$(engram_env "$u")" |
+    install -o "$u" -g "$u" -m 600 /dev/stdin "$h/.config/environment.d/50-workstation-kit.conf"
+  local marker="# workstation-kit: engram over a unix socket"
+  if ! grep -qF "$marker" "$h/.bashrc" 2>/dev/null; then
+    { echo "$marker (only this user can connect)"
+      echo "export $(engram_env "$u")"
+      echo
+      cat "$h/.bashrc" 2>/dev/null
+    } > "$h/.bashrc.kit" && mv "$h/.bashrc.kit" "$h/.bashrc"
+    chown "$u:$u" "$h/.bashrc"
+  fi
+  # the user's systemd reads environment.d on start and on daemon-reload
+  user_systemctl "$u" daemon-reload >/dev/null 2>&1 || true
+}
+
 # tailscale_host: this machine's name in the tailnet (MagicDNS), or its Tailscale IP when MagicDNS
 # is off. What people type after ssh user@.
 tailscale_host() {

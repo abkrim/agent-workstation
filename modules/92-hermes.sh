@@ -7,6 +7,9 @@
 #   - read the repos you share with it (repo-add --hermes): read-only copies in /srv/shared/repos,
 #     refreshed hourly by the dev user. It cannot write them, push, or see ~/work;
 #   - no sudo, no SSH login, no GitHub credentials;
+#   - on this machine's loopback it can reach only nan-gate (its model): a UFW rule rejects every
+#     other local port for the hermes user, so dev's local services (engram, dev servers, Docker
+#     ports) are out of its reach;
 #   - every command it wants to run asks for your approval (approvals.mode manual), and scheduled
 #     jobs cannot run commands (approvals.cron_mode deny);
 #   - only your Telegram user can talk to it.
@@ -33,6 +36,7 @@ if [ ! -x "$H/.local/bin/hermes" ]; then
   rm -f "$tmp"
 fi
 chmod 700 "$H/.hermes"
+install_user_env "$U"
 
 hcfg() { as_user "$U" hermes config set "$1" "$2" >/dev/null; }
 hcfg model.provider custom
@@ -85,6 +89,31 @@ EOF
 chown "$DEV_USER:$DEV_USER" "$units"/shared-repos.*
 user_systemctl "$DEV_USER" daemon-reload
 user_systemctl "$DEV_USER" enable --now shared-repos.timer >/dev/null 2>&1
+
+# --- Loopback guard: the hermes user may connect on this machine only to nan-gate (127.0.0.1:4880).
+# Written into UFW's after.rules, so it survives reloads and reboots. If UFW refuses the new file,
+# the previous one is put back: the firewall is never left broken.
+guard4="-A ufw-after-output -o lo -p tcp -m owner --uid-owner $U -m multiport ! --dports 4880 -j REJECT --reject-with tcp-reset"
+guard6="-A ufw6-after-output -o lo -p tcp -m owner --uid-owner $U -j REJECT --reject-with tcp-reset"
+add_after_rule() {  # add_after_rule FILE RULE COMMENT
+  grep -qF -- "$2" "$1" && return 0
+  cp -a "$1" "$1.kit-backup"
+  awk -v r="$2" -v c="# workstation-kit: $3 (modules/92-hermes.sh)" \
+    '!done && /^COMMIT/ { print c; print r; done=1 } { print }' "$1" > "$1.kit-new" && mv "$1.kit-new" "$1"
+  chmod 640 "$1"
+}
+add_after_rule /etc/ufw/after.rules "$guard4" "Hermes may reach only nan-gate on loopback"
+add_after_rule /etc/ufw/after6.rules "$guard6" "Hermes has no IPv6 loopback"
+if ufw status 2>/dev/null | grep -q "Status: active"; then
+  if ufw reload >/dev/null 2>&1; then
+    ok "loopback guard: $U reaches only 127.0.0.1:4880 on this machine"
+  else
+    for f in /etc/ufw/after.rules /etc/ufw/after6.rules; do [ -f "$f.kit-backup" ] && mv "$f.kit-backup" "$f"; done
+    ufw reload >/dev/null 2>&1 || true
+    warn "UFW rejected the loopback guard; previous rules restored (check 'ufw reload' by hand)"
+  fi
+fi
+rm -f /etc/ufw/after.rules.kit-backup /etc/ufw/after6.rules.kit-backup
 
 # --- Gentle AI for Hermes: its own Go to build engram and gentle-ai (Node comes with Hermes) ---
 as_user "$U" mise use -g --yes go@latest >/dev/null

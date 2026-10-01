@@ -13,6 +13,7 @@ set -uo pipefail
 node_dirs=$(find "$HOME/.hermes/tools" -maxdepth 2 -type d -name bin 2>/dev/null | paste -sd: -)
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:${node_dirs:+$node_dirs:}$PATH"
 export GOBIN="$HOME/.local/bin"
+export ENGRAM_SOCKET="${ENGRAM_SOCKET:-/run/user/$(id -u)/engram.sock}"  # engram's API off TCP (lib/common.sh)
 mkdir -p "$GOBIN"
 
 log() { echo "[$(date '+%F %T')] $*"; }

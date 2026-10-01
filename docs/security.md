@@ -8,6 +8,13 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 - **SSH:** keys only (no passwords), no root login, and only `admin` and `dev` may log in (`/etc/ssh/sshd_config.d/00-workstation-kit.conf`).
 - **fail2ban** watches SSH. It never bans your tailnet (100.64.0.0/10).
 - **Lockout protection:** the installer stops before SSH hardening and before the firewall until you confirm that you can log in over Tailscale.
+- **Tailscale key expiry.** Node keys expire after 180 days by default, and an expired key takes the machine off your tailnet: with the firewall on, that is a lockout. Disable key expiry for this machine in the [admin console](https://login.tailscale.com/admin/machines) (machine menu, "Disable key expiry"). The installer prints the date.
+- **Your tailnet is the perimeter.** Anyone with a device in your tailnet can reach port 22 (they still need an SSH key). If you share the tailnet with other people, restrict who reaches this machine with a Tailscale ACL, and keep two-factor on your Tailscale login.
+- **Provider firewall.** If your VPS provider offers a network firewall, turn it on with no inbound rules: a second layer that holds even if UFW is misconfigured. Tailscale keeps working through outbound connections.
+
+## If you lock yourself out
+
+SSH only answers over Tailscale, so losing Tailscale (expired key, deleted machine) means no SSH. The way back in is your provider's web console: log in as `root` there (console logins are not SSH, so `PermitRootLogin no` does not apply; reset the root password from the provider's panel if you never set one), then `tailscale up` again, or fix whatever broke. Nothing in the kit disables the console.
 
 ## Users and privileges
 
@@ -29,13 +36,15 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 - A `pre-push` hook in every repo blocks **deleting `main`** on the remote.
 - `ci-local` (tests plus GGA's review of the whole PR) is the gate before any merge, both for agents and for `wt rm`.
 - `claude-trust` only marks folders under `~/work` and `~/trees`, your own repos, as trusted.
-- nan-gate holds the machine's NaN key only to add it to GGA's reviews, on its own local port (127.0.0.1:4881). systemd hands it the key as a credential that only the gate can read. Any local user could send requests to that port, so it spends your NaN quota, never more: the users on this machine already hold the key or cannot log in.
+- engram's HTTP API, which its own tools spawn on demand, listens on a unix socket in the user's private runtime directory instead of a TCP port. Out of the box it would listen on 127.0.0.1:7437 and answer reads with no authentication, so any local user could read another user's memories.
+- nan-gate runs in a strict systemd sandbox (dynamic user, read-only system, no capabilities, filtered system calls, loopback and HTTPS only; `systemd-analyze security` rates it 1.1). It holds the machine's NaN key only to add it to GGA's reviews, on its own local port (127.0.0.1:4881). systemd hands it the key as a credential that only the gate can read. Any local user could send requests to that port, so it spends your NaN quota, never more: the users on this machine already hold the key or cannot log in.
 
 ## Hermes
 
 - Hermes runs as its own user, with no sudo, no SSH and no GitHub credentials.
 - It reads **only** the repos you share with `repo-add --hermes`. They are copies in `/srv/shared/repos`, refreshed hourly by `dev`, that Hermes can read but not write. It cannot see `~dev`.
 - Every command it wants to run needs your approval, and scheduled jobs cannot run commands.
+- On this machine it can connect only to nan-gate (its model). A firewall rule for the `hermes` user rejects every other local port, so `dev`'s local services (engram, development servers, Docker ports) are out of its reach even if a prompt injection asks for them.
 - It has its own copy of engram and gentle-ai, built in its own home: nothing from `dev` runs as Hermes.
 - Only your Telegram user id can talk to the bot.
 

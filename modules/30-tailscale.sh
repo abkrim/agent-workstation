@@ -23,3 +23,11 @@ fi
 ok "Tailscale: $(tailscale_host) ($(tailscale ip -4 | head -1))"
 tailscale status --json | jq -e '.Self.DNSName != ""' >/dev/null 2>&1 ||
   warn "MagicDNS is off in your tailnet: you will connect by IP. Turn it on in the Tailscale admin console (DNS) to use the name instead."
+expiry=$(tailscale status --json | jq -r '.Self.KeyExpiry // empty' | cut -c1-10)
+if [ -n "$expiry" ]; then
+  echo
+  echo "  This machine's Tailscale key expires on $expiry. Once the firewall is on, Tailscale is the only"
+  echo "  way in, so an expired key locks you out. In https://login.tailscale.com/admin/machines open"
+  echo "  this machine's menu and choose 'Disable key expiry'. Do it now or before that date."
+  echo
+fi
