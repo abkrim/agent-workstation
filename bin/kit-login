@@ -50,6 +50,19 @@ os.replace(p + ".tmp", p)
 ' "$1" "$3"
 }
 
+# github_ssh_ok — true when GitHub accepts the dev user's SSH key. `ssh -T` always exits 1 (GitHub
+# gives no shell), so the answer is read from its message, not its exit code. Retries for a few
+# seconds: a key just added on github.com can take a moment to work.
+github_ssh_ok() {
+  local out i
+  for i in 1 2 3; do
+    out=$(as_user "$D" ssh -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com 2>&1 || true)
+    case "$out" in *"successfully authenticated"*) return 0 ;; esac
+    [ "$i" = 3 ] || sleep 3
+  done
+  return 1
+}
+
 step_github() {
   title "GitHub"
   # GitHub's published ed25519 fingerprint (docs.github.com → GitHub's SSH key fingerprints).
@@ -65,7 +78,7 @@ step_github() {
   fi
 
   # 1. The SSH key (git clone and push): you paste it on GitHub yourself, then it is checked.
-  if as_user "$D" ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+  if github_ssh_ok; then
     ok "this machine's SSH key is already on your GitHub account"
   else
     echo "  1. Open https://github.com/settings/ssh/new on your computer."
@@ -75,7 +88,7 @@ step_github() {
     echo
     while :; do
       [ "$(ask "  Press Enter once it is added (s + Enter to skip GitHub): ")" != s ] || { warn "GitHub skipped"; return 0; }
-      as_user "$D" ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated" && break
+      github_ssh_ok && break
       echo "  GitHub does not accept it yet. Check that you pasted the whole line and saved it."
     done
     ok "SSH key accepted by GitHub"
