@@ -1,4 +1,5 @@
-# workstation-kit settings. Copy to kit.conf, edit, then run ./install.sh.
+# workstation-kit settings. The first ./install.sh asks you for these and writes kit.conf from this
+# file; edit kit.conf and run ./install.sh again to change anything.
 # No secrets go here: credentials are asked for at the end of the install (kit-login).
 
 # --- Users ---

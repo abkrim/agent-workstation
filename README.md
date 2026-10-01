@@ -19,15 +19,19 @@ Nothing here is tied to one AI. Pick whichever agent you like for each task. The
 As root on the new server:
 
 ```bash
-apt-get update && apt-get install -y git
-git clone https://github.com/lvega05/workstation-kit /opt/workstation-kit
-cd /opt/workstation-kit
-cp kit.conf.example kit.conf
-nano kit.conf          # user names, time zone, machine name, optional modules
-./install.sh
+git clone https://github.com/lvega05/workstation-kit
+./workstation-kit/install.sh
 ```
 
-The installer stops twice to keep you from locking yourself out: before hardening SSH and before turning the firewall on. Each time it asks you to log in over Tailscale from another terminal first. At the end it walks you through your accounts (`kit-login`).
+That's it. The console asks you everything along the way:
+
+1. **A few settings:** user names, time zone, the machine's name, and whether you want Hermes and backups. Enter keeps the defaults.
+2. **A password** for your admin user.
+3. **A Tailscale link** to approve the machine in your tailnet.
+4. **Two safety stops**, one before hardening SSH and one before turning the firewall on, so you can never lock yourself out. Each time, it asks you to log in over Tailscale from another terminal first.
+5. **Your accounts:** GitHub, your NaN key (checked before it is saved), Claude Code, and the Telegram bot for Hermes. You can skip any of them and add it later with `sudo kit-login`.
+
+Your answers are saved in `/opt/workstation-kit/kit.conf`. Edit that file and run the installer again to change anything.
 
 From then on, connect from your computer with:
 
