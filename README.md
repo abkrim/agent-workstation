@@ -42,6 +42,8 @@ Several tasks can run at once, each with its own agent. The agents share one mem
 - A **Telegram** account, for Hermes.
 - A phone with **[Moshi](https://getmoshi.app)** (free plan).
 
+What stops the installer: a system other than Ubuntu 24.04, no SSH key, and the two safety stops, which wait until you have logged in over Tailscale. Everything asked by `kit-login` can be skipped and added later with `sudo kit-login <step>`; until then, without GitHub `repo-add` and merges do not work, and without NaN gentle-shell and Hermes have no model and pull requests go unreviewed. A download that fails halfway stops the module; `./install.sh --from <number>` resumes it.
+
 ## Install
 
 As root on the new server (about 30 minutes on a small VPS; `apt install -y git` first if git is missing):
