@@ -49,8 +49,13 @@ install -d -o "$DEV_USER" -g "$DEV_USER" -m 700 "$h/.config" "$h/.config/docker"
 printf '%s\n' "$DAEMON" | install -o "$DEV_USER" -g "$DEV_USER" -m 600 /dev/stdin "$h/.config/docker/daemon.json"
 uid=$(id -u "$DEV_USER")
 if ! user_systemctl "$DEV_USER" is-active --quiet docker; then
+  # the setup tool traces every command it runs; keep that for the failure case only. The log is
+  # written by root on purpose (this module runs as root): hence SC2024.
+  # shellcheck disable=SC2024
   (cd /tmp && sudo -u "$DEV_USER" -H env XDG_RUNTIME_DIR="/run/user/$uid" \
-    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" dockerd-rootless-setuptool.sh install >/dev/null)
+    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" dockerd-rootless-setuptool.sh install >/tmp/rootless-setup.log 2>&1) ||
+    { cat /tmp/rootless-setup.log; die "rootless Docker setup failed"; }
+  rm -f /tmp/rootless-setup.log
 fi
 user_systemctl "$DEV_USER" enable docker >/dev/null 2>&1
 user_systemctl "$DEV_USER" restart docker

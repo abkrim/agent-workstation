@@ -6,9 +6,30 @@
 #     containers or VMs without internet access (code.claude.com/docs/en/permission-modes), and
 #     this machine is online with your GitHub and NaN credentials. To keep bypass anyway, create
 #     ~/.config/agent-workstation/allow-bypass.
+#   - GGA reviews with NaN through nan-gate's GGA port, and looks at every file of a pull request.
+#     gentle-ai's gga component writes ~/.config/gga/config with PROVIDER="claude" and a short list
+#     of file patterns, which would bill reviews to a Claude plan and skip docs and shell scripts.
 # Run as the dev user by modules/88-gentle-ai.sh and 90-workflow.sh, and by gentle-update after
-# each `gentle-ai sync`, because gentle-ai's permissions component rewrites Claude Code's rules.
+# each `gentle-ai sync`, because gentle-ai rewrites both files.
 set -euo pipefail
+
+gga_conf=$HOME/.config/gga/config
+install -d -m 700 "$HOME/.config/gga"
+[ -f "$gga_conf" ] || : > "$gga_conf"
+set_conf() {  # set_conf KEY VALUE: replace the line or append it; other keys stay
+  if grep -q "^$1=" "$gga_conf"; then
+    sed -i "s|^$1=.*|$1=\"$2\"|" "$gga_conf"
+  else
+    printf '%s="%s"\n' "$1" "$2" >> "$gga_conf"
+  fi
+}
+set_conf PROVIDER "lmstudio:glm5.3-flash"
+set_conf LMSTUDIO_HOST "http://127.0.0.1:4881/v1"
+set_conf FILE_PATTERNS "*"
+set_conf RULES_FILE "AGENTS.md"
+set_conf STRICT_MODE "true"
+set_conf TIMEOUT "300"
+chmod 600 "$gga_conf"
 python3 - <<'EOF'
 import json, os
 home = os.path.expanduser("~")

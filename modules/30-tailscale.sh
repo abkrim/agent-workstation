@@ -21,6 +21,9 @@ if ! tailscale status >/dev/null 2>&1; then
   tailscale up --hostname="${TAILSCALE_HOSTNAME:-workstation}"
 fi
 ok "Tailscale: $(tailscale_host) ($(tailscale ip -4 | head -1))"
+got=$(tailscale status --json | jq -r '.Self.HostName // empty')
+[ -z "$got" ] || [ "$got" = "${TAILSCALE_HOSTNAME:-workstation}" ] ||
+  warn "the name ${TAILSCALE_HOSTNAME:-workstation} was taken in your tailnet, so this machine is '$got'. Rename it in the Tailscale admin console if you prefer."
 tailscale status --json | jq -e '.Self.DNSName != ""' >/dev/null 2>&1 ||
   warn "MagicDNS is off in your tailnet: you will connect by IP. Turn it on in the Tailscale admin console (DNS) to use the name instead."
 expiry=$(tailscale status --json | jq -r '.Self.KeyExpiry // empty' | cut -c1-10)
