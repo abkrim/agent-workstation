@@ -3,8 +3,8 @@
 #
 #   repo-add <owner/repo | GitHub URL> [--new [--public]] [--hermes] [--yes]
 #
-#   0. --new: creates the repo on GitHub first (private unless --public, with a README), so you
-#      can start a project from nothing;
+#   0. --new: creates the repo on GitHub first (private unless --public) and makes its first commit,
+#      a README, from this machine, so you can start a project from nothing;
 #   1. checks that your GitHub account can see it;
 #   2. adds it to ~/.config/agent-workstation/repos;
 #   3. clones it into ~/work/<repo> with a hook that blocks deleting main on the remote, and marks
@@ -40,13 +40,36 @@ name=${slug#*/}
 url="git@github.com:$slug.git"
 dir=$HOME/work/$name
 
+made_here=0
 if [ "$new" = 1 ]; then
   if gh repo view "$slug" >/dev/null 2>&1; then
     echo "= $slug already exists on GitHub"
   else
-    echo "▸ creating $slug on GitHub ($visibility, with a README)"
-    gh repo create "$slug" "--$visibility" --add-readme >/dev/null ||
+    echo "▸ creating $slug on GitHub ($visibility)"
+    gh repo create "$slug" "--$visibility" >/dev/null ||
       die "could not create $slug. Is gh logged in (sudo kit-login github)? Is $slug your account or an org you can create repos in?"
+  fi
+  for try in 1 2 3 4 5; do  # a repo created seconds ago can take a moment to answer over SSH
+    git ls-remote "$url" >/dev/null 2>&1 && break
+    [ "$try" = 5 ] && die "$slug does not answer over SSH yet: run the same command again in a minute"
+    sleep 2
+  done
+  # The first commit is made here, with the identity kit-login set (your GitHub noreply address).
+  # A README made by GitHub itself (gh repo create --add-readme) carries the account's real email
+  # unless the account hides it, and that is published with the repo.
+  if ! git ls-remote --heads "$url" 2>/dev/null | grep -q .; then
+    echo "▸ first commit (README) from this machine"
+    mkdir -p "$dir"
+    [ -d "$dir/.git" ] || git -C "$dir" init -q -b main
+    if ! git -C "$dir" rev-parse -q --verify HEAD >/dev/null; then
+      [ -f "$dir/README.md" ] || printf '# %s\n' "$name" > "$dir/README.md"
+      git -C "$dir" add README.md
+      git -C "$dir" commit -q -m "Initial commit"
+    fi
+    git -C "$dir" remote get-url origin >/dev/null 2>&1 || git -C "$dir" remote add origin "$url"
+    git -C "$dir" push -q -u origin main
+    git -C "$dir" remote set-head origin main
+    made_here=1
   fi
 fi
 
@@ -71,7 +94,9 @@ else
   echo "✓ $name added to $LIST"
 fi
 
-if [ -d "$dir/.git" ]; then
+if [ "$made_here" = 1 ]; then
+  echo "✓ ~/work/$name"
+elif [ -d "$dir/.git" ]; then
   echo "= ~/work/$name already exists"
 else
   echo "▸ cloning into ~/work/$name"

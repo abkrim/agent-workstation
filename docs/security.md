@@ -58,6 +58,7 @@ SSH only answers over Tailscale, so losing Tailscale (expired key, deleted machi
 
 - They are asked for by `kit-login`, never put in `kit.conf` or in this repo.
 - They are stored with mode 600, readable only by the user that needs them, and never passed on a command line, where other users could see them.
+- Your email stays out of public repos: `kit-login github` sets git to commit as your GitHub noreply address, and `repo-add --new` makes a repo's first commit from this machine for the same reason. Commits that GitHub itself makes (a README created on the site, a merge done from the web or with `gh pr merge`) carry your account's real email unless you turn on "Keep my email addresses private" in GitHub's email settings. Do that once; it covers all your repos.
 
 ## What you trust
 
