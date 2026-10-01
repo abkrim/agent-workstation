@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# kit-login — connect your accounts, one step at a time. Run with sudo; safe to run again.
+#
+#   sudo kit-login             every step
+#   sudo kit-login github      GitHub: SSH key, gh login, git identity
+#   sudo kit-login nan         NaN key for Pi (gentle-shell), OpenCode, GGA and Hermes
+#   sudo kit-login claude      Claude Code login
+#   sudo kit-login hermes      Hermes on Telegram: bot token and your user id
+#
+# Every step can be skipped with Enter and done later. Secrets are written with mode 600 and never
+# passed on a command line.
+set -euo pipefail
+KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
+# shellcheck disable=SC1091
+. "$KIT_DIR/lib/common.sh"
+
+[ "$(id -u)" = 0 ] || die "run it with sudo: sudo kit-login"
+D=$DEV_USER
+DH=$(home_of "$D")
+title() { printf '\n\033[1m── %s\033[0m\n' "$*"; }
+ask() { local v; read -r -p "$1" v </dev/tty; printf '%s' "$v"; }
+ask_secret() { local v; read -r -s -p "$1" v </dev/tty; echo >&2; printf '%s' "$v"; }
+
+# set_json_key FILE USER — reads a key on stdin, stores {"nan": {"type": "api", "key": ...}} in FILE.
+set_json_key() {
+  sudo -u "$2" python3 -c '
+import json, os, sys
+p, key = sys.argv[1], sys.stdin.read().strip()
+os.makedirs(os.path.dirname(p), mode=0o700, exist_ok=True)
+d = json.load(open(p)) if os.path.exists(p) else {}
+d["nan"] = {"type": "api", "key": key}
+fd = os.open(p + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+with os.fdopen(fd, "w") as f:
+    json.dump(d, f, indent=2)
+os.replace(p + ".tmp", p)
+' "$1"
+}
+
+# set_env FILE USER NAME — reads a value on stdin, sets NAME=value in a .env file (mode 600).
+set_env() {
+  sudo -u "$2" python3 -c '
+import os, sys
+p, k, v = sys.argv[1], sys.argv[2], sys.stdin.read().strip()
+lines = open(p).read().splitlines() if os.path.exists(p) else []
+out = [l for l in lines if l.split("=", 1)[0] != k] + [f"{k}={v}"]
+fd = os.open(p + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+with os.fdopen(fd, "w") as f:
+    f.write("\n".join(out) + "\n")
+os.replace(p + ".tmp", p)
+' "$1" "$3"
+}
+
+step_github() {
+  title "GitHub"
+  # GitHub's published ed25519 fingerprint (docs.github.com → GitHub's SSH key fingerprints).
+  local fp_expected="SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU" key fp login id name
+  if ! sudo -u "$D" test -f "$DH/.ssh/id_ed25519"; then
+    sudo -u "$D" ssh-keygen -q -t ed25519 -N "" -C "$D@$(hostname)" -f "$DH/.ssh/id_ed25519"
+  fi
+  if ! sudo -u "$D" ssh-keygen -F github.com -f "$DH/.ssh/known_hosts" >/dev/null 2>&1; then
+    key=$(ssh-keyscan -t ed25519 github.com 2>/dev/null)
+    fp=$(echo "$key" | ssh-keygen -lf - | awk '{print $2}')
+    [ "$fp" = "$fp_expected" ] || die "unexpected github.com fingerprint: $fp"
+    echo "$key" | sudo -u "$D" tee -a "$DH/.ssh/known_hosts" >/dev/null
+  fi
+
+  if as_user "$D" gh auth status >/dev/null 2>&1; then
+    ok "gh is already logged in as $(as_user "$D" gh api user -q .login)"
+  else
+    echo "  Log in with your browser, or paste a token (classic, with repo, read:org and"
+    echo "  admin:public_key; or fine-grained with the repos you want). Enter at the first"
+    echo "  question to skip."
+    as_user "$D" gh auth login --hostname github.com --git-protocol ssh --scopes admin:public_key </dev/tty ||
+      { warn "GitHub skipped"; return 0; }
+  fi
+  as_user "$D" gh auth setup-git >/dev/null 2>&1 || true
+
+  local pub
+  pub=$(sudo -u "$D" awk '{print $2}' "$DH/.ssh/id_ed25519.pub")
+  if ! as_user "$D" gh ssh-key list 2>/dev/null | grep -qF "$pub"; then
+    as_user "$D" gh ssh-key add "$DH/.ssh/id_ed25519.pub" --title "workstation-kit $(hostname)" >/dev/null ||
+      warn "could not upload the SSH key: add $DH/.ssh/id_ed25519.pub at github.com/settings/keys"
+  fi
+
+  login=$(as_user "$D" gh api user -q .login)
+  id=$(as_user "$D" gh api user -q .id)
+  name=$(as_user "$D" gh api user -q '.name // .login')
+  as_user "$D" git config --global user.name "$name"
+  as_user "$D" git config --global user.email "$id+$login@users.noreply.github.com"
+  if as_user "$D" ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    ok "GitHub: $login (SSH and gh), commits as $name <$id+$login@users.noreply.github.com>"
+  else
+    warn "SSH to GitHub does not work yet: check the key at github.com/settings/keys"
+  fi
+}
+
+step_nan() {
+  title "NaN (nan.builders)"
+  local key code
+  key=$(ask_secret "  NaN API key (Enter to skip): ")
+  [ -n "$key" ] || { warn "NaN skipped"; return 0; }
+  code=$(curl -s -o /dev/null -w '%{http_code}' -K - https://api.nan.builders/v1/models <<<"header = \"Authorization: Bearer $key\"")
+  [ "$code" = 200 ] || { warn "NaN rejected the key (HTTP $code): nothing saved"; return 0; }
+  printf '%s' "$key" | set_json_key "$DH/.gentle-shell/agent/auth.json" "$D"
+  printf '%s' "$key" | set_json_key "$DH/.local/share/opencode/auth.json" "$D"
+  if [ -f /home/hermes/.hermes/.env ]; then
+    printf '%s' "$key" | set_env /home/hermes/.hermes/.env hermes HERMES_CUSTOM_NAN_BUILDERS_API_KEY
+  fi
+  ok "NaN key saved for Pi (gentle-shell), OpenCode and GGA$([ -f /home/hermes/.hermes/.env ] && echo ", and Hermes")"
+}
+
+step_claude() {
+  title "Claude Code"
+  if as_user "$D" claude auth status >/dev/null 2>&1; then
+    ok "Claude Code is already logged in"
+    return 0
+  fi
+  [ "$(ask "  Log in to Claude Code now? [Y/n] ")" != n ] || { warn "Claude Code skipped"; return 0; }
+  as_user "$D" claude auth login </dev/tty || { warn "Claude Code login did not finish"; return 0; }
+  ok "Claude Code logged in"
+}
+
+step_hermes() {
+  [ -f /home/hermes/.hermes/.env ] || return 0
+  title "Hermes on Telegram"
+  echo "  1. In Telegram, talk to @BotFather, send /newbot and copy the token it gives you."
+  echo "  2. Talk to @userinfobot to get your numeric user id (only you will be able to use the bot)."
+  local token uid
+  token=$(ask_secret "  Bot token (Enter to skip): ")
+  [ -n "$token" ] || { warn "Hermes skipped"; return 0; }
+  uid=$(ask "  Your Telegram user id: ")
+  [[ "$uid" =~ ^[0-9]+$ ]] || { warn "that is not a numeric id: Hermes skipped"; return 0; }
+  printf '%s' "$token" | set_env /home/hermes/.hermes/.env hermes TELEGRAM_BOT_TOKEN
+  printf '%s' "$uid" | set_env /home/hermes/.hermes/.env hermes TELEGRAM_ALLOWED_USERS
+  local huid; huid=$(id -u hermes)
+  (cd /tmp && sudo -u hermes -H env XDG_RUNTIME_DIR="/run/user/$huid" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$huid/bus" \
+    PATH="/home/hermes/.local/bin:/usr/local/bin:/usr/bin:/bin" hermes gateway install --if-missing >/dev/null)
+  user_systemctl hermes restart hermes-gateway.service
+  ok "Hermes is on Telegram: send your bot a message"
+}
+
+case "${1:-all}" in
+  github) step_github ;;
+  nan) step_nan ;;
+  claude) step_claude ;;
+  hermes) step_hermes ;;
+  all) step_github; step_nan; step_claude; step_hermes ;;
+  *) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac
+echo
+ok "done. Run 'sudo kit-login <step>' any time to change something."

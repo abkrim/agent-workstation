@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# claude-trust DIR... — mark folders as trusted for Claude Code (the same as accepting its "trust
+# this folder" dialog the first time). repo-add uses it for each repo and wt new for each task, so
+# opening an agent never needs a manual step. Only folders under ~/work and ~/trees (your own
+# repos). Atomic write of ~/.claude.json.
+set -euo pipefail
+[ $# -ge 1 ] || { echo "usage: claude-trust DIR..." >&2; exit 1; }
+python3 - "$@" <<'EOF'
+import json, os, sys, tempfile
+home = os.path.expanduser("~")
+allowed = (f"{home}/work/", f"{home}/trees/")
+p = f"{home}/.claude.json"
+d = json.load(open(p)) if os.path.exists(p) else {}
+changed = False
+for arg in sys.argv[1:]:
+    path = os.path.realpath(arg)
+    if not path.startswith(allowed) or not os.path.isdir(path):
+        sys.exit(f"claude-trust: {arg} is not a folder under ~/work or ~/trees")
+    proj = d.setdefault("projects", {}).setdefault(path, {})
+    if not proj.get("hasTrustDialogAccepted"):
+        proj["hasTrustDialogAccepted"] = True
+        changed = True
+if changed:
+    fd, tmp = tempfile.mkstemp(dir=home, prefix=".claude.json.")
+    with os.fdopen(fd, "w") as f:
+        json.dump(d, f, indent=2)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, p)
+EOF

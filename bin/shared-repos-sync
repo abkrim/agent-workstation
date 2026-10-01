@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# shared-repos-sync — read-only copies for Hermes in /srv/shared/repos, as the dev user. Only the
+# repos marked "hermes" in your list (repo-add --hermes). Each run brings main and leaves the copy
+# identical to the remote; copies of repos no longer shared are removed. Runs hourly
+# (shared-repos.timer, modules/92-hermes.sh). Hermes reads them through the "agents" group and can
+# never write.
+set -uo pipefail
+
+KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
+BASE=/srv/shared/repos
+umask 027
+failed=0
+shared=()
+while read -r repo slug; do
+  [ -n "$repo" ] || continue
+  shared+=("$repo")
+  dir=$BASE/$repo
+  if [ ! -d "$dir/.git" ]; then
+    git clone -q --branch main "git@github.com:$slug.git" "$dir" || { echo "$repo: clone failed"; failed=1; continue; }
+  fi
+  if git -C "$dir" fetch -q --prune origin main && git -C "$dir" reset -q --hard origin/main && git -C "$dir" clean -qfdx; then
+    echo "$repo: $(git -C "$dir" log -1 --format='%h %cs %s')"
+  else
+    echo "$repo: update failed"; failed=1
+  fi
+done < <("$KIT_DIR/bin/kit-repos" --slug hermes)
+
+for d in "$BASE"/*/; do
+  [ -d "$d" ] || continue
+  r=$(basename "$d")
+  printf '%s\n' "${shared[@]}" | grep -qx "$r" || { rm -rf "$d"; echo "$r: no longer shared, removed"; }
+done
+
+# git refuses to read repos owned by someone else unless they are listed as safe. Hermes's
+# ~/.gitconfig includes this file, so it can run git log/diff on exactly these copies.
+{
+  echo "# Written by shared-repos-sync: the shared copies Hermes may read."
+  echo "[safe]"
+  for r in "${shared[@]}"; do echo "	directory = $BASE/$r"; done
+} > "$BASE/.gitconfig-safe"
+chmod 640 "$BASE/.gitconfig-safe"
+exit "$failed"

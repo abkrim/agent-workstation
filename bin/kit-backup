@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# kit-backup [backup|check] — local restic backups (modules/95-backups.sh).
+#   backup: saves /etc/workstation-kit/backup-paths and applies retention (7 daily, 4 weekly,
+#           6 monthly).
+#   check:  verifies the repository, reading 10 % of the data.
+# Runs as the restic user with CAP_DAC_READ_SEARCH (reads everything, writes only its repository).
+set -euo pipefail
+export RESTIC_REPOSITORY=/srv/backups/restic
+export RESTIC_PASSWORD_FILE=/home/restic/.restic-password
+export RESTIC_CACHE_DIR=/home/restic/.cache/restic
+CONF=/etc/workstation-kit
+
+case "${1:-backup}" in
+  backup)
+    paths=$(grep -v '^\s*#' "$CONF/backup-paths" | grep -v '^\s*$' | while read -r p; do if [ -e "$p" ]; then echo "$p"; fi; done)
+    # shellcheck disable=SC2086
+    restic backup --quiet --one-file-system --exclude-caches \
+      --exclude-file "$CONF/backup-excludes" --tag workstation-kit $paths
+    restic forget --quiet --tag workstation-kit --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
+    restic snapshots --latest 1 --compact
+    ;;
+  check)
+    restic check --read-data-subset=10%
+    ;;
+  *)
+    echo "usage: kit-backup [backup|check]" >&2
+    exit 2
+    ;;
+esac

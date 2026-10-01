@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# ci-local [DIR] — a repo's checks, run here instead of on a paid CI. DIR is the checkout (default:
+# the current directory). Exits 0 when everything passes, 2 when it does not know how to test the
+# repo. Agents run it before merging; wt rm runs it before merging leftovers.
+#
+# Recipe, in this order:
+#   1. .wt/ci, if the repo has one (executable): the repo's own checks.
+#   2. Detected from the lockfile: uv.lock → uv sync, ruff, pytest · pnpm-lock.yaml or
+#      package-lock.json → install, then whichever of format:check, lint, typecheck, test and build
+#      the package.json declares.
+# Then, on any branch other than main, GGA reviews the whole pull request against AGENTS.md (it
+# fails ci-local if it finds problems; if NaN does not answer, it retries once and moves on).
+set -euo pipefail
+
+DIR=$(cd "${1:-.}" && pwd)
+cd "$DIR"
+REPO=$(basename "$(git config --get remote.origin.url 2>/dev/null || echo "$DIR")" .git)
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+export CI=true
+step() { echo "▸ $*"; "$@"; }
+
+gga_review() {
+  local out attempt
+  for attempt in 1 2; do
+    echo "▸ gga run --pr-mode --diff-only (attempt $attempt)"
+    set +e
+    out=$(PR_BASE_BRANCH=origin/main gga run --pr-mode --diff-only 2>&1)
+    set -e
+    printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | grep -v '^\s*$' | grep -v 'still waiting' | tail -40
+    if printf '%s' "$out" | grep -q "CODE REVIEW PASSED"; then return 0; fi
+    if printf '%s' "$out" | grep -q "No matching files changed"; then return 0; fi
+    if printf '%s' "$out" | grep -q "CODE REVIEW FAILED"; then
+      echo "✗ GGA found problems in the PR" >&2
+      return 1
+    fi
+  done
+  echo "⚠ GGA did not answer (NaN busy or down): the PR goes without its review." >&2
+}
+
+if [ -x .wt/ci ]; then
+  step ./.wt/ci
+elif [ -f uv.lock ]; then
+  step uv sync --locked --all-groups
+  step uv lock --check
+  if uv run --locked ruff --version >/dev/null 2>&1; then
+    step uv run --locked ruff format --check .
+    step uv run --locked ruff check .
+  fi
+  if [ -d tests ] || [ -d test ]; then step uv run --locked pytest; fi
+elif [ -f pnpm-lock.yaml ] || [ -f package-lock.json ]; then
+  if [ -f pnpm-lock.yaml ]; then pm=pnpm; step pnpm install --frozen-lockfile
+  else pm=npm; step npm ci; fi
+  for s in format:check lint typecheck test build; do
+    if node -e 'process.exit(require("./package.json").scripts?.[process.argv[1]] ? 0 : 1)' "$s"; then
+      step "$pm" run "$s"
+    fi
+  done
+else
+  echo "ci-local: no recipe for $REPO. Add an executable .wt/ci to the repo with its checks." >&2
+  exit 2
+fi
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" != main ] && [ "$branch" != HEAD ] && [ "${CI_LOCAL_SKIP_GGA:-0}" != 1 ] && command -v gga >/dev/null; then
+  git fetch -q origin main || true
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "⚠ uncommitted changes: GGA only reviews what is already committed on the branch" >&2
+  fi
+  if [ -n "$(git rev-list origin/main..HEAD 2>/dev/null | head -1)" ]; then
+    gga_review
+  fi
+fi
+echo "✓ ci-local: $REPO is green"

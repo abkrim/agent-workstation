@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# gentle-update — install or update the Gentleman ecosystem from main, as the dev user (no sudo):
+#   gentle-shell  ~/src/gentle-shell  (only when main moved; if installing fails, rolls back)
+#   engram        go install .../engram/v2/cmd/engram@main          → ~/.local/bin
+#   gentle-ai     go install .../gentle-ai/v3/cmd/gentle-ai@main    → ~/.local/bin
+#   gga           ~/src/gga (git pull + ./install.sh)               → ~/.local/bin
+# gentle-update.timer runs it every 3 hours (modules/80-agents.sh). Exits 1 if anything failed.
+set -uo pipefail
+
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+export GOBIN="$HOME/.local/bin"
+mkdir -p "$GOBIN" "$HOME/src"
+
+log() { echo "[$(date '+%F %T')] $*"; }
+failed=()
+
+install_gentle_shell_wrapper() {
+  cat > "$HOME/.local/bin/gentle-shell" <<'EOF'
+#!/usr/bin/env bash
+# Managed by workstation-kit (bin/gentle-update). From a checkout, gentle-shell does not see Pi as a
+# sibling package: GENTLE_SHELL_PI points it at the Pi that came with it.
+export GENTLE_SHELL_PI="${GENTLE_SHELL_PI:-$HOME/src/gentle-shell/node_modules/.bin/pi}"
+exec node "$HOME/src/gentle-shell/bin/gentle-shell.mjs" "$@"
+EOF
+  chmod 755 "$HOME/.local/bin/gentle-shell"
+}
+
+js_install() {  # lockfile decides the package manager
+  if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else npm ci; fi
+}
+
+update_gentle_shell() {
+  local d="$HOME/src/gentle-shell" old new
+  if [ ! -d "$d/.git" ]; then
+    git clone --quiet --branch main https://github.com/Gentleman-Programming/gentle-shell.git "$d" || return 1
+    (cd "$d" && js_install >/dev/null 2>&1) || return 1
+    install_gentle_shell_wrapper
+    log "gentle-shell installed ($(git -C "$d" rev-parse --short HEAD))"
+    return 0
+  fi
+  install_gentle_shell_wrapper
+  git -C "$d" fetch --quiet origin main || return 1
+  old=$(git -C "$d" rev-parse HEAD); new=$(git -C "$d" rev-parse origin/main)
+  if [ "$old" = "$new" ]; then log "gentle-shell up to date (${old:0:8})"; return 0; fi
+  git -C "$d" reset --quiet --hard origin/main
+  if (cd "$d" && js_install >/dev/null 2>&1); then
+    log "gentle-shell ${old:0:8} → ${new:0:8}"
+  else
+    log "gentle-shell: installing ${new:0:8} failed; back to ${old:0:8}"
+    git -C "$d" reset --quiet --hard "$old"
+    (cd "$d" && js_install >/dev/null 2>&1)
+    return 1
+  fi
+}
+
+update_go_tool() {  # $1 binary name, $2 module@main
+  local bin="$GOBIN/$1" before after
+  before=$(go version -m "$bin" 2>/dev/null | awk '$1=="mod"{print $3}')
+  go install "$2" 2>&1 | tail -n 5 || return 1
+  after=$(go version -m "$bin" 2>/dev/null | awk '$1=="mod"{print $3}')
+  [ -n "$after" ] || return 1
+  if [ "$before" = "$after" ]; then log "$1 up to date ($after)"; else log "$1 ${before:-(new)} → $after"; fi
+}
+
+update_gga() {
+  local d="$HOME/src/gga" old new
+  if [ ! -d "$d/.git" ]; then
+    git clone --quiet --branch main https://github.com/Gentleman-Programming/gentleman-guardian-angel.git "$d" || return 1
+    old=none
+  else
+    git -C "$d" fetch --quiet origin main || return 1
+    old=$(git -C "$d" rev-parse HEAD)
+  fi
+  new=$(git -C "$d" rev-parse origin/main)
+  if [ "$old" = "$new" ] && [ -x "$GOBIN/gga" ]; then log "gga up to date (${new:0:8})"; return 0; fi
+  git -C "$d" reset --quiet --hard origin/main
+  (cd "$d" && echo y | ./install.sh >/dev/null 2>&1) || return 1
+  log "gga ${old:0:8} → ${new:0:8}"
+}
+
+update_gentle_shell || failed+=(gentle-shell)
+update_go_tool engram    github.com/Gentleman-Programming/engram/v2/cmd/engram@main      || failed+=(engram)
+update_go_tool gentle-ai github.com/gentleman-programming/gentle-ai/v3/cmd/gentle-ai@main || failed+=(gentle-ai)
+update_gga || failed+=(gga)
+
+if [ ${#failed[@]} -gt 0 ]; then log "FAILED: ${failed[*]}"; exit 1; fi
+log "OK"

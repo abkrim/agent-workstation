@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Installed by workstation-kit (repo-add). Pushing to main is allowed; the only thing blocked is
+# DELETING main/master on the remote, which cannot be undone.
+# git's stdin: <local ref> <local sha> <remote ref> <remote sha>; a local sha of zeros = deletion.
+while read -r _lref lsha rref _rsha; do
+  case "$rref" in
+    refs/heads/main|refs/heads/master)
+      if [[ "$lsha" =~ ^0+$ ]]; then
+        echo "pre-push: deleting ${rref#refs/heads/} on the remote is blocked." >&2
+        exit 1
+      fi ;;
+  esac
+done
+exit 0

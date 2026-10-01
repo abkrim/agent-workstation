@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# repo-add — bring one of your GitHub repos into the workstation, ready for any agent. As dev:
+#
+#   repo-add <owner/repo | GitHub URL> [--hermes] [--yes]
+#
+#   1. checks that your GitHub account can see it;
+#   2. adds it to ~/.config/workstation-kit/repos;
+#   3. clones it into ~/work/<repo> with a hook that blocks deleting main on the remote, and marks
+#      it as trusted for Claude Code;
+#   4. same rules for every agent: if AGENTS.md or CLAUDE.md (which only imports AGENTS.md) are
+#      missing, offers to create them and push them to main (--yes: without asking);
+#   5. opens its workspace in Herdr;
+#   6. --hermes: shares a read-only copy with Hermes in /srv/shared/repos;
+#   7. runs ci-local once.
+# Safe to run again: it only does what is missing.
+set -euo pipefail
+
+KIT_DIR=${KIT_DIR:-/opt/workstation-kit}
+LIST=$HOME/.config/workstation-kit/repos
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+die() { echo "repo-add: $*" >&2; exit 1; }
+
+src="" hermes=0 yes=0
+for a in "$@"; do
+  case "$a" in
+    --hermes) hermes=1 ;;
+    --yes) yes=1 ;;
+    -*) die "unknown option $a" ;;
+    *) src=$a ;;
+  esac
+done
+[ -n "$src" ] || die "usage: repo-add <owner/repo | GitHub URL> [--hermes] [--yes]"
+slug=$(printf '%s' "$src" | sed -E 's#^(https?://github\.com/|git@github\.com:)##; s#\.git$##; s#/+$##')
+[[ "$slug" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "cannot read '$src' (expected owner/repo)"
+name=${slug#*/}
+url="git@github.com:$slug.git"
+dir=$HOME/work/$name
+
+echo "▸ access to $slug"
+git ls-remote --heads "$url" main | grep -q . ||
+  die "$slug is not visible to your GitHub account or has no main branch (invite your account as a collaborator, or check kit-login github)"
+
+mkdir -p "$(dirname "$LIST")" "$HOME/work"
+touch "$LIST"
+if awk -v n="$name" '$1 == n { f = 1 } END { exit !f }' "$LIST"; then
+  echo "= $name is already in your list"
+  if [ "$hermes" = 1 ] && ! "$KIT_DIR/bin/kit-repos" hermes | grep -qx "$name"; then
+    awk -v n="$name" '$1 == n && $0 !~ /hermes/ { $0 = $0 (NF >= 3 ? ",hermes" : " hermes") } { print }' "$LIST" > "$LIST.tmp"
+    mv "$LIST.tmp" "$LIST"
+    echo "✓ $name shared with Hermes"
+  fi
+else
+  printf '%-30s %-40s %s\n' "$name" "$slug" "$([ "$hermes" = 1 ] && echo hermes)" | sed 's/ *$//' >> "$LIST"
+  echo "✓ $name added to $LIST"
+fi
+
+if [ -d "$dir/.git" ]; then
+  echo "= ~/work/$name already exists"
+else
+  echo "▸ cloning into ~/work/$name"
+  git clone -q "$url" "$dir"
+fi
+install -m 755 "$KIT_DIR/config/pre-push" "$dir/.git/hooks/pre-push"
+"$KIT_DIR/bin/claude-trust" "$dir"
+
+# GGA reviews pull requests from ci-local, never on each commit.
+if [ -f "$dir/.git/hooks/pre-commit" ] && grep -q GGA "$dir/.git/hooks/pre-commit"; then
+  (cd "$dir" && gga uninstall >/dev/null) && echo "✓ removed GGA's per-commit hook (it reviews PRs instead)"
+fi
+
+# The same rules for every agent: AGENTS.md (Pi, OpenCode, GGA) and a CLAUDE.md that imports it.
+missing=()
+[ -f "$dir/AGENTS.md" ] || missing+=(AGENTS.md)
+[ -f "$dir/CLAUDE.md" ] || missing+=(CLAUDE.md)
+if [ ${#missing[@]} -gt 0 ]; then
+  answer=y
+  if [ "$yes" != 1 ]; then
+    read -r -p "Create ${missing[*]} in $slug and push them to main? [Y/n] " answer </dev/tty || answer=n
+  fi
+  if [[ "${answer:-y}" =~ ^[Yy]?$ ]]; then
+    git -C "$dir" pull -q --rebase origin main
+    if [ ! -f "$dir/AGENTS.md" ]; then
+      python3 - "$dir" "$name" "$KIT_DIR/config/AGENTS.md" <<'EOF'
+import json, os, sys
+d, name, tmpl = sys.argv[1:]
+cmds = []
+if os.path.exists(f"{d}/uv.lock"):
+    cmds += ["- Dependencies: `uv sync --locked --all-groups`", "- Tests: `uv run --locked pytest`"]
+    if "ruff" in open(f"{d}/uv.lock").read():
+        cmds += ["- Format and lint: `uv run --locked ruff format .` and `uv run --locked ruff check .`"]
+elif os.path.exists(f"{d}/package.json"):
+    pm = "pnpm" if os.path.exists(f"{d}/pnpm-lock.yaml") else "npm"
+    cmds += [f"- Dependencies: `{pm} install`"]
+    scripts = json.load(open(f"{d}/package.json")).get("scripts", {})
+    cmds += [f"- `{pm} run {s}`" for s in ("dev", "build", "test", "lint", "typecheck", "format:check") if s in scripts]
+text = open(tmpl).read().replace("{{NAME}}", name).replace("{{COMMANDS}}", "".join(c + "\n" for c in cmds))
+open(f"{d}/AGENTS.md", "w").write(text)
+EOF
+    fi
+    [ -f "$dir/CLAUDE.md" ] || echo "@AGENTS.md" > "$dir/CLAUDE.md"
+    git -C "$dir" add "${missing[@]}"
+    git -C "$dir" commit -q -m "chore: rules for coding agents (${missing[*]})" \
+      -m "AGENTS.md is the single source for every agent; CLAUDE.md imports it. Created with workstation-kit's repo-add."
+    git -C "$dir" push -q origin main
+    echo "✓ ${missing[*]} pushed to main"
+  else
+    echo "  skipped: agents will work without repo rules until you add AGENTS.md"
+  fi
+fi
+
+if command -v herdr >/dev/null && herdr status server >/dev/null 2>&1; then
+  if herdr workspace list | python3 -c '
+import json, sys
+ws = json.load(sys.stdin)["result"]["workspaces"]
+sys.exit(0 if any((w.get("worktree") or {}).get("checkout_path") == sys.argv[1] or w["label"] == sys.argv[2]
+                  for w in ws) else 1)
+' "$dir" "$name"; then
+    echo "= Herdr: workspace $name already exists"
+  else
+    # worktree open (not workspace create): Herdr records the repo path and never duplicates it
+    herdr worktree open --cwd "$dir" --path "$dir" --label "$name" --no-focus >/dev/null
+    echo "✓ Herdr: workspace $name"
+  fi
+else
+  echo "  (Herdr is not running: once it is, run repo-add again to get the workspace)"
+fi
+
+if "$KIT_DIR/bin/kit-repos" hermes | grep -qx "$name" && [ -d /srv/shared/repos ]; then
+  "$KIT_DIR/bin/shared-repos-sync" >/dev/null && echo "✓ Hermes: read-only copy in /srv/shared/repos/$name"
+fi
+
+echo "▸ ci-local (installs dependencies the first time)"
+set +e
+ci-local "$dir"
+ci=$?
+set -e
+
+echo
+echo "── $name is ready in ~/work/$name"
+case "$ci" in
+  0) echo "   ci-local: green" ;;
+  2) echo "   ci-local: no recipe yet. Add an executable .wt/ci to the repo with its checks." ;;
+  *) echo "   ci-local: failing on main. Look at the output above before starting work." ;;
+esac
+echo "   To work: wt new $name <task>"

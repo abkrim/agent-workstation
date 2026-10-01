@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# kit-repos [--slug] [option] — your repos, one per line, from ~/.config/workstation-kit/repos
+# (repo-add writes it).
+#   --slug   print "name owner/repo"
+#   option   only the ones that have it (e.g. hermes)
+set -euo pipefail
+LIST=${KIT_REPOS_FILE:-$HOME/.config/workstation-kit/repos}
+[ -f "$LIST" ] || exit 0
+slug=0
+[ "${1:-}" = --slug ] && { slug=1; shift; }
+sed 's/#.*//' "$LIST" | awk -v o="${1:-}" -v s="$slug" \
+  'NF >= 2 && (o == "" || index("," $3 ",", "," o ",")) { print (s ? $1 " " $2 : $1) }'

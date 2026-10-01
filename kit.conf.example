@@ -1,0 +1,31 @@
+# workstation-kit settings. Copy to kit.conf, edit, then run ./install.sh.
+# No secrets go here: credentials are asked for at the end of the install (kit-login).
+
+# --- Users ---
+# You, for administration: sudo (asks for a password you set during the install), SSH over Tailscale.
+ADMIN_USER=admin
+# Coding agents and your repos: no sudo, rootless Docker, SSH over Tailscale.
+DEV_USER=dev
+
+# --- Machine ---
+# Time zone for logs and timers (list them with: timedatectl list-timezones).
+TIMEZONE=UTC
+# Name of this machine in your tailnet: you will connect with ssh dev@<this name>.
+TAILSCALE_HOSTNAME=workstation
+
+# SSH public key(s) allowed for ADMIN_USER and DEV_USER, one per line.
+# Leave empty to reuse root's ~/.ssh/authorized_keys (what most VPS panels set up).
+SSH_PUBLIC_KEY=""
+
+# --- Optional modules (yes/no) ---
+# Hermes Agent: a Telegram assistant that can READ the repos you choose (never write).
+INSTALL_HERMES=yes
+# Daily local restic snapshots of the dev user's work, agent settings and Hermes.
+# They live on the same disk: they protect against mistakes, not against losing the server.
+INSTALL_BACKUPS=yes
+
+# --- NaN (nan.builders) ---
+# How many requests this machine may send to NaN at once, and per minute.
+# Keep them within your plan's limits (shared with any other machine using the same key).
+NAN_MAX_CONCURRENT=4
+NAN_MAX_RPM=40
