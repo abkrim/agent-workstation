@@ -54,6 +54,7 @@ Then follow **[docs/getting-started.md](docs/getting-started.md)**.
 | `70-runtimes` | Through [mise](https://mise.jdx.dev): Node 24, pnpm, Bun, Python, uv and Go. Plus the GitHub CLI. |
 | `80-agents` | Claude Code; [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell) (Pi) with the NaN provider; engram, gentle-ai and [GGA](https://github.com/Gentleman-Programming/gentleman-guardian-angel), refreshed from `main` every 3 hours; OpenCode; and [Herdr](https://herdr.dev) with the integrations for each agent. |
 | `85-nan` | **nan-gate**, so all NaN clients together stay within your plan's limits. OpenCode and GGA on NaN, and two model profiles for gentle-shell: `opensource` (DeepSeek V4 Flash orchestrates) and `opensource-glm` (GLM 5.3 Flash orchestrates). |
+| `88-gentle-ai` | Gentle AI for Claude Code, OpenCode and gentle-shell, with the defaults of its own installer (see below), plus CodeGraph. |
 | `90-workflow` | `wt`, `repo-add`, `ci-local` and `claude-trust`; `~/work` and `~/trees`; guardrails shared by every agent. |
 | `92-hermes` | *(optional)* [Hermes Agent](https://hermes-agent.nousresearch.com) on Telegram, with NaN and read-only copies of the repos you share. |
 | `95-backups` | *(optional)* Daily local, encrypted restic snapshots. |
@@ -69,6 +70,20 @@ wt rm <repo> <task>          # merges what is left (only if ci-local is green) a
 ```
 
 Details in **[docs/getting-started.md](docs/getting-started.md)**.
+
+## Gentle AI
+
+The kit runs [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) for you with the defaults of its own installer, without asking:
+
+| Setting | Value |
+|---|---|
+| Agents | Claude Code, OpenCode, gentle-shell (Pi) |
+| Preset | `full-gentleman`: claude-theme, context7, persona, engram, gga, opencode-gentle-logo, permissions, skills |
+| Persona | neutral (no regional tone; technical artifacts in English) |
+| Receipt-Driven Development | on |
+| Community tool | CodeGraph, indexed for each repo and each task |
+
+To change any of it, run `gentle-ai` as `dev`: its own screens show every option. `gentle-ai doctor` reports the health of the setup. It shows `pi not found in PATH`: that is expected, because here Pi is gentle-shell.
 
 ## Your accounts
 

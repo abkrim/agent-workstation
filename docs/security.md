@@ -24,6 +24,11 @@ A basic layer that is reasonable for a personal workstation exposed to the inter
 
 ## Agents and repos
 
+- Gentle AI's `permissions` component (part of the default preset) sets the agents' rules:
+  - **Claude Code runs commands without asking** (`bypassPermissions`), and is denied secrets (`.env`, `.ssh`, keys, credentials) and destructive commands like `rm -rf ~`.
+  - **OpenCode asks before** `git commit`, `git push`, `git rebase`, `git reset --hard` and `ssh`, and is denied the same secrets.
+  - To change this, run `gentle-ai` as `dev` and pick other permissions.
+
 - A `pre-push` hook in every repo blocks **deleting `main`** on the remote.
 - Claude Code and OpenCode refuse `git push --no-verify` and `gh repo delete`.
 - `ci-local` (tests plus GGA's review of the whole PR) is the gate before any merge, both for agents and for `wt rm`.

@@ -5,6 +5,9 @@
 #   engram        go install <module declared by main>/cmd/engram@main      → ~/.local/bin
 #   gentle-ai     go install <module declared by main>/cmd/gentle-ai@main   → ~/.local/bin
 #   gga           ~/src/gga from main (git pull + ./install.sh)              → ~/.local/bin
+#   Gentle AI     gentle-ai sync: refreshes what it configured in each agent, then the kit's
+#                 guardrails are merged back (kit-guardrails)
+#   CodeGraph     npm install -g @colbymchenry/codegraph@latest
 #   Claude Code   claude update
 #   OpenCode, Herdr  latest release (mise upgrade)
 # The Go module path is read from main's go.mod on every run, so a new major version (v3 → v4)
@@ -99,6 +102,20 @@ update_pi_packages() {  # gentle-shell's Pi packages (NaN provider, engram bridg
   log "gentle-shell packages updated"
 }
 
+update_gentle_ai_assets() {  # what gentle-ai set up in each agent; Pi is gentle-shell's own
+  command -v gentle-ai >/dev/null && [ -f "$HOME/.gentle-ai/state.json" ] || return 0
+  PATH="$HOME/src/gentle-shell/node_modules/.bin:$PATH" PI_CODING_AGENT_DIR="$HOME/.gentle-shell/agent" \
+    gentle-ai sync </dev/null >/dev/null 2>&1 || return 1
+  "${KIT_DIR:-/opt/workstation-kit}/bin/kit-guardrails" || return 1
+  log "gentle-ai sync done"
+}
+
+update_codegraph() {
+  command -v codegraph >/dev/null || return 0
+  npm install -g --silent @colbymchenry/codegraph@latest >/dev/null 2>&1 || return 1
+  log "codegraph $(codegraph --version 2>/dev/null | head -1)"
+}
+
 update_claude() {
   command -v claude >/dev/null || return 0
   local out
@@ -116,6 +133,8 @@ update_pi_packages || failed+=(gentle-shell-packages)
 update_go_tool engram    Gentleman-Programming/engram    || failed+=(engram)
 update_go_tool gentle-ai Gentleman-Programming/gentle-ai || failed+=(gentle-ai)
 update_gga || failed+=(gga)
+update_gentle_ai_assets || failed+=(gentle-ai-sync)
+update_codegraph || failed+=(codegraph)
 update_claude || failed+=(claude)
 update_releases || failed+=(opencode/herdr)
 

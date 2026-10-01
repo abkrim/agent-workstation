@@ -9,7 +9,7 @@
 #      it as trusted for Claude Code;
 #   4. same rules for every agent: if AGENTS.md or CLAUDE.md (which only imports AGENTS.md) are
 #      missing, offers to create them and push them to main (--yes: without asking);
-#   5. opens its workspace in Herdr;
+#   5. indexes it with CodeGraph and opens its workspace in Herdr;
 #   6. --hermes: shares a read-only copy with Hermes in /srv/shared/repos;
 #   7. runs ci-local once.
 # Safe to run again: it only does what is missing.
@@ -62,6 +62,13 @@ else
 fi
 install -m 755 "$KIT_DIR/config/pre-push" "$dir/.git/hooks/pre-push"
 "$KIT_DIR/bin/claude-trust" "$dir"
+# Folders the agents' tools create in a project never go into git (local rule, shared by worktrees).
+for p in .codegraph/ .atl/; do
+  grep -qxF "$p" "$dir/.git/info/exclude" 2>/dev/null || echo "$p" >> "$dir/.git/info/exclude"
+done
+if command -v codegraph >/dev/null; then
+  (cd "$dir" && codegraph init </dev/null >/dev/null 2>&1) && echo "✓ CodeGraph: project indexed"
+fi
 
 # GGA reviews pull requests from ci-local, never on each commit.
 if [ -f "$dir/.git/hooks/pre-commit" ] && grep -q GGA "$dir/.git/hooks/pre-commit"; then

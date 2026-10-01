@@ -82,6 +82,9 @@ cmd_new() {
     git -C "$src" worktree add --quiet -b "$branch" "$dir" "$base"
   fi
   if command -v claude-trust >/dev/null; then claude-trust "$dir"; fi  # Claude Code opens it without asking
+  if command -v codegraph >/dev/null; then  # the task's own code graph, built in the background
+    (cd "$dir" && nohup codegraph init </dev/null >/dev/null 2>&1 &)
+  fi
 
   local p=$((20000 + n * 10))
   cat > "$dir/.env.wt" <<EOF

@@ -9,7 +9,7 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
 
-for t in wt repo-add ci-local claude-trust kit-repos shared-repos-sync kit-login; do
+for t in wt repo-add ci-local claude-trust kit-repos kit-guardrails shared-repos-sync kit-login; do
   chmod 755 "$KIT_DIR/bin/$t"
   ln -sfn "$KIT_DIR/bin/$t" "/usr/local/bin/$t"
 done
@@ -28,20 +28,7 @@ fi
 as_user "$DEV_USER" git config --global init.defaultBranch main
 as_user "$DEV_USER" git config --global push.autoSetupRemote true
 
-# Claude Code: deny rules, keeping whatever settings are already there.
+# Claude Code: deny rules merged into whatever is already there (gentle-ai's rules included).
 install -d -o "$DEV_USER" -g "$DEV_USER" -m 700 "$h/.claude"
-as_user "$DEV_USER" python3 - <<'EOF'
-import json, os
-p = os.path.expanduser("~/.claude/settings.json")
-s = json.load(open(p)) if os.path.exists(p) else {}
-deny = s.setdefault("permissions", {}).setdefault("deny", [])
-for rule in ["Bash(gh repo delete *)", "Bash(git push --no-verify *)",
-             "Bash(git push * --no-verify *)", "Bash(git push * --no-verify)"]:
-    if rule not in deny:
-        deny.append(rule)
-with open(p, "w") as f:
-    json.dump(s, f, indent=2)
-    f.write("\n")
-os.chmod(p, 0o600)
-EOF
+as_user "$DEV_USER" "$KIT_DIR/bin/kit-guardrails"
 ok "workflow: wt, repo-add, ci-local; ~/work and ~/trees; guardrails for every agent"
