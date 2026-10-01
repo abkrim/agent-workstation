@@ -2,7 +2,7 @@
 
 A cloud machine where AI coding agents do the work and you steer, from your laptop or your phone. Clone this repo on a fresh Ubuntu 24.04 VPS, run one script, answer a few questions, and in about half an hour you have the server, the agents, the models, the memory and the workflow set up and kept up to date. Then you spend your time on your ideas instead of on the setup.
 
-It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. Two things are indispensable, a Linux server and a NaN key; the rest is optional. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
+It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. The only thing you cannot do without is a Linux server. The models come from NaN by default, one provider for everything, which is what keeps the setup simple; the rest is optional. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
 
 ## How you work
 
@@ -29,7 +29,10 @@ Several tasks can run at once, each with its own agent. The agents share one mem
 **Indispensable:**
 
 - **Linux:** a fresh **Ubuntu 24.04** server. A VPS works well: 4 GB of RAM or more, 8+ if you run several agents at once. Your SSH public key on its root account (most VPS panels ask for it when you create the server).
-- **[NaN](https://nan.builders/docs):** an API key. Its open-source models are behind gentle-shell, Hermes and the review of every pull request. Together with the VPS, it is the only thing you pay for.
+
+**The models, NaN by default:**
+
+- A **[NaN](https://nan.builders/docs)** API key. gentle-shell, Hermes and the review of every pull request all run on NaN out of the box, so there is one provider to pay, one key to enter and one place where limits are watched. Without it the installer still finishes, but those three sit idle until you add a key (Claude Code works on its own). If you go with NaN, the author's referral link is [cloud.nan.builders/r/2XHAG6MF](https://cloud.nan.builders/r/2XHAG6MF). Limits are per key, requests per minute and at once, so pick a plan with room for the agents you will run at the same time; the installer asks for that number and nan-gate keeps the machine inside it.
 
 **Free accounts the setup relies on:**
 
@@ -121,7 +124,7 @@ To change any of it, run `gentle-ai` as `dev`: its own screens show every option
 
 ## Models and reviews
 
-[NaN's API](https://nan.builders/docs/api) is OpenAI-compatible. The kit uses it in three places:
+**Why NaN by default.** Agents that work all day need a provider that is priced for volume, that answers through an OpenAI-compatible API every tool already speaks, and that runs open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools. [NaN's API](https://nan.builders/docs/api) is that provider here; the kit uses it in three places:
 
 - **gentle-shell:** GLM 5.3 Flash by default, with the two profiles above.
 - **Hermes:** GLM 5.3 Flash.
