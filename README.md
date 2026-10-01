@@ -135,15 +135,35 @@ The kit runs gentle-ai for you with the defaults of its own installer, without a
 
 To change any of it, run `gentle-ai` as `dev`: its own screens show every option. `gentle-ai doctor` reports the health of the setup. It shows `pi not found in PATH`: that is expected, because here Pi is gentle-shell.
 
-## Models and reviews
+## Defaults: models and settings
 
-**Why NaN by default.** Beyond the privacy above: a provider priced for volume, an OpenAI-compatible API every tool already speaks, and open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools. [NaN's API](https://nan.builders/docs/api) is that provider here; the kit uses it in three places:
+Everything a fresh install decides for you, and where to change it. All the models are NaN's, with the names NaN uses ([models](https://nan.builders/docs/models)).
 
-- **gentle-shell:** GLM 5.3 Flash by default, with the two profiles above.
-- **Hermes:** GLM 5.3 Flash.
-- **GGA**, which reviews each pull request against `AGENTS.md` before it merges: GLM 5.3 Flash, through GGA's OpenAI-compatible provider. GGA runs inside `ci-local`, once per pull request, never on each commit.
+**Why NaN by default.** Beyond the privacy above: a provider priced for volume, an OpenAI-compatible API every tool already speaks, and open-source models (GLM, DeepSeek, Qwen) you can switch between freely. One provider for everything also means one key in `kit-login`, one gate for the limits and nothing to reconcile between tools.
 
-All of them go through **nan-gate** (127.0.0.1:4880), which keeps the whole machine within your plan's limits, with Hermes first in line. NaN's limits are per key: 60 requests per minute, and 7 requests at once on the base plan or 10 on the premium one ([models](https://nan.builders/docs/models)). The installer asks how many this machine may use, so pick the plan with room for the agents you will run at the same time.
+| Piece | Default | Change it |
+|---|---|---|
+| **gentle-shell**, the model you talk to | NaN, GLM 5.3 Flash | `/model` inside gentle-shell |
+| **gentle-shell**, the models of its agents | profile `opensource-glm`, below | `/gentle:profiles` inside gentle-shell; the file is `~/.pi/gentle-ai/profiles.json` |
+| **Claude Code** | your Claude plan, in [auto mode](https://code.claude.com/docs/en/permission-modes); reading secrets, `git push --no-verify` and `gh repo delete` denied | `~/.claude/settings.json`; `kit-guardrails` puts the mode and the denies back after each `gentle-ai sync` |
+| **GGA**, the review of every pull request | NaN, GLM 5.3 Flash, through nan-gate; rules from `AGENTS.md`; strict mode; 5 minutes per review; once per pull request from `ci-local`, never per commit | `~/.config/gga/config`; a repo's own `.gga` file wins |
+| **Hermes** | NaN, GLM 5.3 Flash, through nan-gate, for its side tasks too (summaries, approvals, reviews); asks before every command; scheduled jobs cannot run commands; context files up to 120 000 characters | `~hermes/.hermes/config.yaml`, then restart `hermes-gateway.service` for the `hermes` user |
+| **nan-gate** | 4 requests at once (asked at install) and 40 per minute for the whole machine; the queue serves Hermes first, then your agents, then GGA | `NAN_MAX_CONCURRENT` and `NAN_MAX_RPM` in `/opt/agent-workstation/kit.conf`, then `sudo ./install.sh --only 85` |
+| **engram** | one memory per repo, shared by Claude Code and gentle-shell; Hermes has its own | nothing to set; `engram tui` to browse it |
+| **Updates** | every 3 hours; the Gentleman tools from their `main` branch | `systemctl --user edit gentle-update.timer` as `dev` |
+
+**The gentle-shell profiles.** Gentle AI runs gentle-shell with a crew of agents (the orchestrator you talk to, the spec-driven-development agents, reviewers, judges), and a profile says which model each one uses. Two ship with the kit, `opensource-glm` active; they differ only in the orchestrator:
+
+| Agents | `opensource-glm` | `opensource` |
+|---|---|---|
+| orchestrator | GLM 5.3 Flash | DeepSeek V4 Flash |
+| sdd-explore, sdd-spec, sdd-sync, sdd-apply, sdd-archive, jd-judge-a, jd-fix-agent, gentle-ai-worker, review-risk | GLM 5.3 Flash | GLM 5.3 Flash |
+| sdd-design, sdd-research, sdd-proposal, sdd-tasks, sdd-verify, sdd-status, sdd-onboard, jd-judge-b, gentle-ai-explore, gentle-ai-verify, review-refuter, review-readability, review-reliability, review-resilience, review-validator | DeepSeek V4 Flash | DeepSeek V4 Flash |
+| sdd-init | Qwen 3.8 Flash | Qwen 3.8 Flash |
+
+Thinking is high for every agent except sdd-archive (medium). Add your own profile in the same file and switch with `/gentle:profiles`.
+
+NaN's limits are per key: 60 requests per minute, and 7 at once on the base plan or 10 on the premium one. Pick `NAN_MAX_CONCURRENT` with room for the agents you run at the same time, and lower if the same key serves another machine.
 
 ## Your accounts
 
