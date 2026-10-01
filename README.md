@@ -8,6 +8,10 @@ The models come from [NaN](https://nan.builders) because of its privacy: it keep
 
 It is a workstation, not a production host: enough security that a cheap VPS on the internet does not become somebody else's, and nothing more in the way.
 
+First release: v1.0.0.
+
+![How it fits together: you reach the VPS through Tailscale; inside, Herdr holds a workspace per repo and per task, Claude Code and gentle-shell share AGENTS.md and engram, a task goes repo-add, wt new, the agent works, wt rm; nan-gate meters NaN; Hermes is optional](docs/diagram.svg)
+
 ## How you work
 
 1. **Open the workstation.** From your laptop, `ssh -t dev@<machine> herdr`. From your phone, open Moshi and tap the machine. Either way you land in [Herdr](https://herdr.dev), a terminal with a sidebar: one workspace per repo, one per task, and none of them lost when you disconnect.

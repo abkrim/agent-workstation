@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" font-family="Liberation Sans, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#111c33"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="1180" cy="-40" r="300" fill="#22c55e" opacity="0.07"/>
+  <circle cx="60" cy="700" r="260" fill="#38bdf8" opacity="0.07"/>
+
+  <!-- Left: words -->
+  <text x="80" y="110" font-size="18" fill="#94a3b8" font-family="Liberation Mono, Menlo, monospace">github.com/lvega05/agent-workstation</text>
+  <text x="80" y="190" font-size="64" fill="#f8fafc" font-weight="bold">agent-workstation</text>
+  <text x="80" y="246" font-size="26" fill="#cbd5e1">One script turns a fresh Ubuntu 24.04 VPS into a</text>
+  <text x="80" y="282" font-size="26" fill="#cbd5e1">workstation for AI coding agents.</text>
+
+  <g font-size="18" fill="#e2e8f0">
+    <rect x="80" y="330" width="138" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="149" y="356" text-anchor="middle">gentle-shell</text>
+    <rect x="228" y="330" width="138" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="297" y="356" text-anchor="middle">Claude Code</text>
+    <rect x="376" y="330" width="104" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="428" y="356" text-anchor="middle">engram</text>
+    <rect x="490" y="330" width="80" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="530" y="356" text-anchor="middle">GGA</text>
+    <rect x="80" y="382" width="92" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="126" y="408" text-anchor="middle">Herdr</text>
+    <rect x="182" y="382" width="104" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="234" y="408" text-anchor="middle">Hermes</text>
+    <rect x="296" y="382" width="96" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="344" y="408" text-anchor="middle">Moshi</text>
+  </g>
+
+  <text x="80" y="480" font-size="20" fill="#86efac">NaN by default: no logs, no training on your code</text>
+  <text x="80" y="514" font-size="20" fill="#7dd3fc">Behind Tailscale: the public IP answers nothing</text>
+  <text x="80" y="570" font-size="18" fill="#64748b">MIT · Ubuntu 24.04 · one command per repo, one per task</text>
+
+  <!-- Right: terminal -->
+  <rect x="720" y="120" width="480" height="400" rx="14" fill="#020617" stroke="#334155"/>
+  <rect x="720" y="120" width="480" height="38" rx="14" fill="#1e293b"/>
+  <rect x="720" y="144" width="480" height="14" fill="#1e293b"/>
+  <circle cx="744" cy="139" r="6" fill="#ef4444"/>
+  <circle cx="764" cy="139" r="6" fill="#f59e0b"/>
+  <circle cx="784" cy="139" r="6" fill="#22c55e"/>
+  <text x="960" y="144" font-size="14" fill="#94a3b8" text-anchor="middle" font-family="Liberation Mono, Menlo, monospace">root@fresh-vps</text>
+  <g font-size="17" font-family="Liberation Mono, Menlo, monospace">
+    <text x="744" y="196" fill="#e2e8f0">$ git clone github.com/lvega05/agent-workstation</text>
+    <text x="744" y="226" fill="#e2e8f0">$ ./agent-workstation/install.sh</text>
+    <g stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="745,263 750,268 759,257"/>
+      <polyline points="745,293 750,298 759,287"/>
+      <polyline points="745,323 750,328 759,317"/>
+      <polyline points="745,353 750,358 759,347"/>
+      <polyline points="745,383 750,388 759,377"/>
+    </g>
+    <text x="770" y="268" fill="#22c55e">users, SSH keys only, firewall on Tailscale</text>
+    <text x="770" y="298" fill="#22c55e">gentle-shell, Claude Code, engram, GGA</text>
+    <text x="770" y="328" fill="#22c55e">Herdr, Hermes on Telegram, Moshi</text>
+    <text x="770" y="358" fill="#22c55e">NaN connected, nan-gate on 127.0.0.1</text>
+    <text x="770" y="388" fill="#22c55e">updates every 3 hours</text>
+    <text x="744" y="440" fill="#94a3b8">Ready. From your laptop:</text>
+    <text x="744" y="470" fill="#7dd3fc">$ ssh -t dev@workstation herdr</text>
+  </g>
+</svg>
