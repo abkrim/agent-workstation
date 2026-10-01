@@ -1,8 +1,8 @@
 # workstation-kit
 
-Turn a fresh Ubuntu 24.04 server into a private, secure workstation for AI coding agents, in one command.
+Turn a fresh Ubuntu 24.04 server into a private workstation for AI coding agents. You clone this repo, run one script and answer a few questions.
 
-You get Claude Code, Pi (through gentle-shell), OpenCode and the Gentleman ecosystem side by side, with open-source models from [NaN](https://nan.builders) ready to use. One workflow fits all of them: one task, one worktree, one Herdr workspace, and checks that run on your own machine before every merge. Optionally, Hermes runs as a Telegram assistant that can read, but never write, the repos you choose.
+You get Claude Code, Pi (through gentle-shell), OpenCode and the Gentleman Programming tools side by side, with open-source models from [NaN](https://nan.builders) ready to use. One workflow fits all of them: one task, one worktree, one Herdr workspace, and checks that run on your own machine before every merge. Optionally, Hermes runs as a Telegram assistant that can read, but never write, the repos you choose.
 
 Nothing here is tied to one AI. Pick whichever agent you like for each task. They all follow the same repo rules (`AGENTS.md`).
 
@@ -53,7 +53,7 @@ Then follow **[docs/getting-started.md](docs/getting-started.md)**.
 | `60-docker` | Docker, with nobody in the `docker` group, plus rootless Docker for `dev`. Ports bind to 127.0.0.1. |
 | `70-runtimes` | Through [mise](https://mise.jdx.dev): Node 24, pnpm, Bun, Python, uv and Go. Plus the GitHub CLI. |
 | `80-agents` | Claude Code; [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell) (Pi) with the NaN provider; engram, gentle-ai and [GGA](https://github.com/Gentleman-Programming/gentleman-guardian-angel), refreshed from `main` every 3 hours; OpenCode; and [Herdr](https://herdr.dev) with the integrations for each agent. |
-| `85-nan` | **nan-gate**, so all NaN clients together stay within your plan's limits. OpenCode and GGA on NaN, and two model profiles for gentle-shell: `opensource` (DeepSeek V4 Flash orchestrates) and `opensource-glm` (GLM 5.3 Flash orchestrates). |
+| `85-nan` | **nan-gate**, so all NaN clients together stay within your plan's limits. OpenCode and GGA on NaN, and two model profiles for gentle-shell: `opensource-glm` (active: GLM 5.3 Flash orchestrates) and `opensource` (DeepSeek V4 Flash orchestrates). Switch with `/gentle:profiles`. |
 | `88-gentle-ai` | Gentle AI for Claude Code, OpenCode and gentle-shell, with the defaults of its own installer (see below), plus CodeGraph. |
 | `90-workflow` | `wt`, `repo-add`, `ci-local` and `claude-trust`; `~/work` and `~/trees`; guardrails shared by every agent. |
 | `92-hermes` | *(optional)* [Hermes Agent](https://hermes-agent.nousresearch.com) on Telegram, with NaN and read-only copies of the repos you share. |
@@ -99,6 +99,7 @@ Every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev`
 
 - gentle-shell, engram, gentle-ai and GGA from their `main` branch;
 - gentle-shell's packages, the NaN provider included;
+- what gentle-ai set up in each agent (`gentle-ai sync`), and CodeGraph;
 - Claude Code, OpenCode and Herdr, to their latest release.
 
 If one of them fails, the rest still update and the next run tries again. See what it did with `journalctl --user -u gentle-update` (as `dev`).
@@ -110,6 +111,10 @@ cd /opt/workstation-kit && sudo git pull && sudo ./install.sh
 ```
 
 Every module is idempotent, so running it again is how you update. Run a single one with `sudo ./install.sh --only 85`. Your own changes to the agents' config files are kept: the kit only copies them when they are missing.
+
+## If something fails
+
+The installer stops at the module that failed and tells you how to resume, for example `sudo /opt/workstation-kit/install.sh --from 80`. Modules that already ran are safe to run again.
 
 ## Credits
 
