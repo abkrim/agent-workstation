@@ -1,10 +1,28 @@
 # agent-workstation
 
-Turn a fresh Ubuntu 24.04 server into a private workstation for AI coding agents. You clone this repo, run one script and answer a few questions.
+A cloud machine where AI coding agents do the work and you steer, from your laptop or your phone. Clone this repo on a fresh Ubuntu 24.04 VPS, run one script, answer a few questions, and in about half an hour you have the server, the agents, the models, the memory and the workflow set up and kept up to date. Then you spend your time on your ideas instead of on the setup.
 
-You get [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell) side by side, set up with [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), and open-source models from [NaN](https://nan.builders/docs) ready to use. One workflow fits both: one task, one worktree, one [Herdr](https://herdr.dev) workspace, and checks that run on your own machine before every merge. Optionally, [Hermes](https://hermes-agent.nousresearch.com) runs as your assistant on Telegram, also on NaN, and can read, but never write, the repos you choose.
+It is a workstation, not a production host: a place to build things fast, with enough security that a cheap VPS on the internet does not become somebody else's. The agents you get are [Claude Code](https://code.claude.com/docs) and Pi through [gentle-shell](https://github.com/Gentleman-Programming/gentle-shell), configured by [Gentle AI](https://github.com/Gentleman-Programming/gentle-ai), with open-source models from [NaN](https://nan.builders/docs). Optionally [Hermes](https://hermes-agent.nousresearch.com) runs as an assistant on Telegram. Everything is reachable from a phone through [Moshi](https://getmoshi.app).
 
-Pick whichever agent you like for each task. They all follow the same repo rules (`AGENTS.md`).
+## How you work
+
+1. **Open the workstation.** From your laptop, `ssh -t dev@<machine> herdr`. From your phone, open Moshi and tap the machine. Either way you land in [Herdr](https://herdr.dev), a terminal that keeps a workspace per repo and per task and never loses them when you disconnect.
+2. **Start a task.** `wt new my-app login` gives that task its own branch, folder, ports and Herdr workspace. The repo's `main` is never touched.
+3. **Hand it to an agent.** Open `claude` or `gentle-shell` in the task and say what you want, as you would to a person: "add login with magic links, run ci-local, open the PR and merge it if it is green."
+4. **Go do something else.** The agent works. Herdr's sidebar shows whether it is busy, waiting for you or done. With Moshi, your phone gets a push when it needs an answer or an approval, and you can reply from the notification.
+5. **Close the task.** `wt rm my-app login` runs the repo's checks and a review of the whole pull request by GGA against your rules; if everything is green it merges and cleans up. If not, it tells you what failed and leaves things in place.
+
+Several tasks can run at once, each with its own agent. The agents share one memory per repo through engram, so what was decided in one task is known in the next, and the same rules file, `AGENTS.md`, applies to all of them.
+
+## What you stop doing by hand
+
+- **Hardening a server:** users, SSH with keys only, firewall that answers only inside your tailnet, automatic security updates, fail2ban.
+- **Installing and updating agents:** Claude Code, gentle-shell, engram, gentle-ai, GGA, Herdr and their configuration, refreshed every 3 hours.
+- **Wiring models:** NaN connected to gentle-shell, Hermes and the review step, with one gate so you never exceed your plan's limits.
+- **Making agents behave the same:** `AGENTS.md` and `CLAUDE.md` in every repo, memory shared across tasks, guardrails that stop a `git push --no-verify` or a deleted `main`.
+- **Juggling branches and ports:** one worktree per task, with ports and a database of its own if the repo asks for one.
+- **Checking before merging:** tests and an AI review of every pull request, on your own machine, no paid CI.
+- **Getting to it from the phone:** Mosh is installed; Moshi adds the machine from a QR.
 
 ## What you need
 
@@ -13,7 +31,7 @@ Pick whichever agent you like for each task. They all follow the same repo rules
 - A free **[Tailscale](https://tailscale.com/kb)** account, with Tailscale on the computer you connect from.
 - A **GitHub** account.
 - A **[NaN](https://nan.builders/docs)** API key, for gentle-shell, Hermes and the reviews of your pull requests.
-- Optional: a **Claude** plan for Claude Code, and a **Telegram** account for Hermes.
+- Optional: a **Claude** plan for Claude Code, a **Telegram** account for Hermes, and a phone with **[Moshi](https://getmoshi.app)** (free).
 
 ## Install
 
@@ -40,7 +58,7 @@ From then on, connect from your computer with:
 ssh -t dev@<machine-name> herdr
 ```
 
-Then follow **[docs/getting-started.md](docs/getting-started.md)**.
+Then follow **[docs/getting-started.md](docs/getting-started.md)**, which walks through the whole way of working, from a server with no repos to a merged pull request.
 
 ## Daily use, in short
 
@@ -51,7 +69,11 @@ claude                       # or gentle-shell; both remember through engram
 wt rm <repo> <task>          # merges what is left (only if ci-local is green) and cleans up
 ```
 
-The whole way of working, from a server with no repos to a merged pull request, is in **[docs/getting-started.md](docs/getting-started.md)**. From a phone, use [Moshi](https://getmoshi.app) over Tailscale: **[docs/phone.md](docs/phone.md)**, with optional push notifications and approvals through `kit-moshi`.
+## From your phone
+
+[Moshi](https://getmoshi.app) (iOS and Android, free plan) is a terminal that connects straight to the machine over SSH or Mosh through Tailscale, with no relay in between. It lists your Herdr sessions in a tab; tap one and you are in the same workspaces as on your laptop, with the same `Ctrl-B` prefix.
+
+Adding the machine takes a QR (`kit-moshi connect`) or one command with the phone's key (`kit-phone-key`). If you also want push notifications and approvals from the agents on your phone, `kit-moshi` installs Moshi's hook with conservative settings: it is a closed-source daemon from getmoshi.app, so the guide spells out exactly what it sends and what it never sends. All of it in **[docs/phone.md](docs/phone.md)**.
 
 ## What it sets up
 
@@ -67,7 +89,7 @@ The whole way of working, from a server with no repos to a merged pull request, 
 | `80-agents` | Claude Code; gentle-shell with the NaN provider; [engram](https://github.com/Gentleman-Programming/engram), gentle-ai and [GGA](https://github.com/Gentleman-Programming/gentleman-guardian-angel); Herdr with the integrations for each agent. |
 | `85-nan` | **nan-gate**, so everything on the machine that uses NaN stays within your plan's limits. GGA reviews with NaN. Two model profiles for gentle-shell: `opensource-glm` (active, GLM 5.3 Flash orchestrates) and `opensource` (DeepSeek V4 Flash orchestrates); switch with `/gentle:profiles`. |
 | `88-gentle-ai` | Gentle AI for Claude Code and gentle-shell, with the defaults of its own installer (see below), plus [CodeGraph](https://github.com/colbymchenry/codegraph). |
-| `90-workflow` | `wt`, `repo-add`, `ci-local` and `claude-trust`; `~/work` and `~/trees`; guardrails shared by every agent. |
+| `90-workflow` | `wt`, `repo-add`, `ci-local`, `claude-trust`, `kit-moshi` and `kit-phone-key`; `~/work` and `~/trees`; guardrails shared by every agent. |
 | `92-hermes` | *(optional)* Hermes on Telegram, with NaN and GLM 5.3 Flash, Gentle AI, and read-only copies of the repos you share. |
 | `95-backups` | *(optional)* Daily local, encrypted [restic](https://restic.net) snapshots. |
 | `99-credentials` | `kit-login`: GitHub, NaN, Claude Code and Hermes. |
@@ -102,13 +124,15 @@ All of them go through **nan-gate** (127.0.0.1:4880), which keeps the whole mach
 
 ## Security
 
-See **[docs/security.md](docs/security.md)**. In short:
+This is a development machine on the internet, so the goal is simple: nobody but you gets in, agents cannot damage the system, and a compromised piece cannot reach the others. See **[docs/security.md](docs/security.md)**. In short:
 
-- The server is reachable only through your tailnet, with SSH keys only and no root login.
+- The server is reachable only through your tailnet, with SSH keys only and no root login. The public IP answers nothing.
 - `dev`, the user the agents run as, has no sudo, and Docker runs rootless.
 - Claude Code runs in [auto mode](https://code.claude.com/docs/en/permission-modes): a safety classifier reviews each action instead of asking you, and secrets are denied.
-- Hermes asks before running any command, answers only you, and can only read what you share with it.
+- Hermes asks before running any command, answers only you, can only read what you share with it, and on the machine can reach only its model gate.
 - Security updates install themselves.
+
+For customer data, payments or anything regulated, treat this as a starting point and add what your case needs.
 
 ## Security checks done on a real install
 
@@ -136,7 +160,7 @@ Every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev`
 - gentle-shell, engram, gentle-ai and GGA from their `main` branch;
 - gentle-shell's packages, the NaN provider included;
 - what gentle-ai set up in each agent (`gentle-ai sync`), and CodeGraph;
-- Claude Code and Herdr, to their latest release.
+- Claude Code, Herdr and, if you installed it, Moshi's hook, to their latest release.
 
 Hermes has its own copy of engram and gentle-ai, kept current the same way by `hermes-gentle-update`. If one part fails, the rest still update and the next run tries again. See what it did with `journalctl --user -u gentle-update` (as `dev`).
 
