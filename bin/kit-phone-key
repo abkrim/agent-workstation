@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# kit-phone-key: allow another SSH key for this user (your phone's, another computer's). As dev:
+#   kit-phone-key "ssh-ed25519 AAAA... phone"
+#   kit-phone-key < key.pub
+# Validates the key, skips it if it is already there, keeps ~/.ssh/authorized_keys at mode 600.
+set -euo pipefail
+key=${1:-$(cat)}
+key=$(printf '%s' "$key" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+[[ "$key" =~ ^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp[0-9]+|sk-ssh-ed25519@openssh\.com|sk-ecdsa-sha2-nistp256@openssh\.com)\ [A-Za-z0-9+/=]+ ]] ||
+  { echo "kit-phone-key: that is not an SSH public key (it starts with ssh-ed25519, ssh-rsa, ecdsa-...)" >&2; exit 1; }
+printf '%s\n' "$key" | ssh-keygen -lf - >/dev/null 2>&1 || { echo "kit-phone-key: the key does not parse" >&2; exit 1; }
+install -d -m 700 "$HOME/.ssh"
+touch "$HOME/.ssh/authorized_keys"; chmod 600 "$HOME/.ssh/authorized_keys"
+if grep -qF "$(printf '%s' "$key" | awk '{print $2}')" "$HOME/.ssh/authorized_keys"; then
+  echo "= that key is already allowed"
+else
+  printf '%s\n' "$key" >> "$HOME/.ssh/authorized_keys"
+  echo "✓ key allowed for $(id -un): $(printf '%s\n' "$key" | ssh-keygen -lf - | awk '{print $2}')"
+fi

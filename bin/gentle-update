@@ -8,6 +8,7 @@
 #   Gentle AI     gentle-ai sync: refreshes what it configured in each agent, then the kit's
 #                 guardrails are merged back (kit-guardrails)
 #   CodeGraph     npm install -g @colbymchenry/codegraph@latest
+#   moshi-hook    moshi-hook update, when kit-moshi installed it
 #   Claude Code   claude update
 #   Herdr         latest release (mise upgrade)
 # The Go module path is read from main's go.mod on every run, so a new major version (v3 → v4)
@@ -117,6 +118,13 @@ update_codegraph() {
   log "codegraph $(codegraph --version 2>/dev/null | head -1)"
 }
 
+update_moshi() {  # only when kit-moshi installed it; its own auto-update is off
+  command -v moshi-hook >/dev/null || return 0
+  moshi-hook update >/dev/null 2>&1 || return 1
+  systemctl --user try-restart moshi-hook.service >/dev/null 2>&1 || true
+  log "moshi-hook $(moshi-hook --version 2>/dev/null | awk '{print $NF}')"
+}
+
 update_claude() {
   command -v claude >/dev/null || return 0
   local out
@@ -136,6 +144,7 @@ update_go_tool gentle-ai Gentleman-Programming/gentle-ai || failed+=(gentle-ai)
 update_gga || failed+=(gga)
 update_gentle_ai_assets || failed+=(gentle-ai-sync)
 update_codegraph || failed+=(codegraph)
+update_moshi || failed+=(moshi-hook)
 update_claude || failed+=(claude)
 update_releases || failed+=(herdr)
 

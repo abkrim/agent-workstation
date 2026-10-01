@@ -48,6 +48,12 @@ SSH only answers over Tailscale, so losing Tailscale (expired key, deleted machi
 - It has its own copy of engram and gentle-ai, built in its own home: nothing from `dev` runs as Hermes.
 - Only your Telegram user id can talk to the bot.
 
+## Your phone (optional)
+
+- Moshi, the phone terminal, connects over SSH or Mosh through Tailscale, like your computer: nothing new opens on the machine. Mosh listens on UDP ports 60000 to 61000 only on the Tailscale interface, because that is all the firewall lets in.
+- `moshi-hook`, installed only if you run `kit-moshi`, is a closed-source daemon from getmoshi.app running as `dev`. It listens on 127.0.0.1:24543 (out of Hermes's reach) and keeps one WebSocket to Moshi's servers, through which your phone receives agent events and sends approvals. An event carries at most 200 characters of your prompt, 80 of the reply and 256 of the command to approve, with project name, model and context use. The kit disables its usage uploads and localhost port scanning. Its pairing secret lives in `~dev/.config/moshi`, mode 600. `kit-moshi remove` takes it out.
+- The "Easy Pair" QR (`kit-moshi connect`) is a short-lived credential: whoever scans it gets the phone's SSH key added to `dev`'s `authorized_keys`, through Moshi's service. Treat it like a password while it is on screen. The by-hand alternative, `kit-phone-key`, never involves Moshi's servers.
+
 ## Secrets
 
 - They are asked for by `kit-login`, never put in `kit.conf` or in this repo.

@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# kit-moshi: push notifications and remote approvals from your agents on your phone, through Moshi
+# (getmoshi.app, free plan). Optional: Moshi works as a plain terminal without any of this. As dev:
+#
+#   kit-moshi            install moshi-hook with conservative settings, its user service and the
+#                        agent hooks, then pair your phone (connection, then notifications)
+#   kit-moshi connect    show the QR that adds this machine to Moshi on a phone (SSH/Mosh)
+#   kit-moshi pair       link notifications to a phone (token from Moshi: Settings > Integrations)
+#   kit-moshi status     what is installed and running
+#   kit-moshi remove     take the hooks, the service and the binary away
+#
+# What moshi-hook is: a closed-source daemon from getmoshi.app that runs as you, listens only on
+# 127.0.0.1:24543 and keeps one WebSocket to Moshi's servers. Each event it sends carries up to
+# 200 characters of your prompt, 80 of the agent's reply, the command behind an approval (256) and
+# the project name, model and context use. Transcripts and files never leave this machine. The kit
+# turns off its usage uploads and its localhost port scanning; gentle-update keeps it current.
+set -euo pipefail
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/src/gentle-shell/node_modules/.bin:$PATH"
+export PI_CODING_AGENT_DIR="$HOME/.gentle-shell/agent"  # the hook for Pi goes into gentle-shell's home
+die() { echo "kit-moshi: $*" >&2; exit 1; }
+need() { command -v moshi-hook >/dev/null || die "moshi-hook is not installed: run kit-moshi first"; }
+
+# The address the phone must use: this machine in the tailnet. Moshi's own guess could be the
+# public IP, which the firewall does not answer.
+ts_host() {
+  local h
+  h=$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' 2>/dev/null | sed 's/\.$//')
+  [ -n "$h" ] || h=$(tailscale ip -4 2>/dev/null | head -1)
+  printf '%s' "$h"
+}
+
+connect() {
+  local h; h=$(ts_host)
+  echo "Install Moshi on your phone (App Store / Google Play), then scan the QR below with it. It adds"
+  echo "the SSH/Mosh connection to this machine as $(id -un)${h:+ at $h}."
+  echo "The QR and its link grant SSH access to whoever scans them: do not share or screenshot them."
+  echo "They expire in a few minutes. This waits for the phone; Ctrl+C skips it (kit-moshi connect"
+  echo "shows a new one any time)."
+  echo
+  trap 'echo; echo "  connection step skipped"' INT
+  moshi-hook host setup --user "$(id -un)" --name "$(hostname)" ${h:+--host "$h"} || true
+  trap - INT
+}
+
+pair() {
+  local token
+  echo "In Moshi: Settings > Integrations shows a pairing token. Paste it here."
+  read -r -s -p "  Pairing token (Enter to skip): " token </dev/tty; echo
+  [ -n "$token" ] || { echo "  skipped: run 'kit-moshi pair' when you have it"; return 0; }
+  moshi-hook pair --token "$token" --store file && echo "✓ notifications linked to your phone"
+}
+
+case "${1:-install}" in
+  install)
+    if [ ! -x "$HOME/.local/bin/moshi-hook" ]; then
+      echo "▸ installing moshi-hook from getmoshi.app"
+      curl -fsSL https://getmoshi.app/install.sh | MOSHI_HOOK_SKIP_FIRST_RUN=1 sh >/dev/null || die "install failed"
+    fi
+    moshi-hook set usage-collection off >/dev/null     # no usage snapshots uploaded to Moshi
+    moshi-hook set scan-ports none >/dev/null          # no probing of localhost ports
+    moshi-hook set always-on-discovery off >/dev/null  # no scanning while no phone is attached
+    moshi-hook set auto-update off >/dev/null          # gentle-update does it, like every other tool
+    moshi-hook service install >/dev/null
+    systemctl --user restart moshi-hook.service        # settings apply on restart
+    echo "▸ hooks for the agents"
+    moshi-hook install 2>&1 | grep -E "installed$" | sed 's/^/  /' || true
+    echo "✓ moshi-hook $(moshi-hook --version | awk '{print $NF}') runs as $(id -un) and listens only on 127.0.0.1:24543"
+    echo
+    echo "── 1 of 2: the connection"
+    connect
+    echo
+    echo "── 2 of 2: the notifications"
+    pair
+    ;;
+  connect) need; connect ;;
+  pair) need; pair ;;
+  status)
+    command -v moshi-hook >/dev/null || { echo "moshi-hook is not installed (kit-moshi to install it)"; exit 0; }
+    echo "moshi-hook $(moshi-hook --version | awk '{print $NF}') · service: $(systemctl --user is-active moshi-hook.service 2>/dev/null)"
+    moshi-hook set 2>/dev/null | grep -E "usage-collection|scan-ports|always-on-discovery|auto-update"
+    ;;
+  remove)
+    command -v moshi-hook >/dev/null || { echo "moshi-hook is not installed"; exit 0; }
+    moshi-hook uninstall >/dev/null 2>&1 || true          # removes only its own entries from the agents' configs
+    moshi-hook service uninstall >/dev/null 2>&1 || true
+    rm -f "$HOME/.local/bin/moshi-hook" "$HOME/.local/bin/moshi"
+    echo "✓ moshi-hook removed (Moshi still works as a plain SSH/Mosh terminal)"
+    ;;
+  *) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac

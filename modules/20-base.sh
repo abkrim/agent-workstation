@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Base system: updates, common packages, time zone, automatic security updates (no automatic
-# reboots) and fail2ban for SSH.
+# reboots), fail2ban for SSH, and mosh (SSH that survives a phone changing networks; only ever
+# reached over Tailscale, like SSH).
 set -euo pipefail
 # shellcheck disable=SC1091
 . "$KIT_DIR/lib/common.sh"
@@ -9,7 +10,7 @@ log "updating the system (a few minutes on a fresh server)"
 apt-get update -qq
 apt-get full-upgrade -y -qq >/dev/null
 apt_install curl git jq unzip ca-certificates gnupg build-essential python3 python3-venv \
-  libatomic1 unattended-upgrades fail2ban
+  libatomic1 unattended-upgrades fail2ban mosh
 
 timedatectl set-timezone "${TIMEZONE:-UTC}"
 

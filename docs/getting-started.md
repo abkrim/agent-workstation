@@ -141,6 +141,10 @@ wt ls
 
 shows what is open, with ports and containers.
 
+## From your phone
+
+Moshi (iOS and Android, free) attaches to the same Herdr sessions over Tailscale, and can notify you when an agent needs you. See [phone.md](phone.md).
+
 ## Leaving and coming back
 
 Leave Herdr with `Ctrl+b`, release, `q`. Agents, servers and tests keep running. Come back with the same `ssh -t ... herdr` command and everything is where you left it, even if your connection dropped.

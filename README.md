@@ -51,14 +51,14 @@ claude                       # or gentle-shell; both remember through engram
 wt rm <repo> <task>          # merges what is left (only if ci-local is green) and cleans up
 ```
 
-The whole way of working, from a server with no repos to a merged pull request, is in **[docs/getting-started.md](docs/getting-started.md)**.
+The whole way of working, from a server with no repos to a merged pull request, is in **[docs/getting-started.md](docs/getting-started.md)**. From a phone, use [Moshi](https://getmoshi.app) over Tailscale: **[docs/phone.md](docs/phone.md)**, with optional push notifications and approvals through `kit-moshi`.
 
 ## What it sets up
 
 | Module | What you get |
 |---|---|
 | `10-users` | `admin` (sudo, with a password) and `dev` (no sudo) with your SSH key. |
-| `20-base` | Updates, automatic security updates (no automatic reboots), fail2ban, your time zone. |
+| `20-base` | Updates, automatic security updates (no automatic reboots), fail2ban, mosh, your time zone. |
 | `30-tailscale` | Tailscale: the only way in once the firewall is on. |
 | `40-ssh` | SSH with keys only, no root, only `admin` and `dev`. |
 | `50-firewall` | UFW: everything incoming denied except Tailscale. |
@@ -143,11 +143,12 @@ The installer stops at the module that failed and tells you how to resume, for e
 | Claude Code | [code.claude.com/docs](https://code.claude.com/docs) |
 | Tailscale | [tailscale.com/kb](https://tailscale.com/kb) |
 | Herdr | [herdr.dev](https://herdr.dev) |
+| Moshi | [getmoshi.app/docs](https://getmoshi.app/docs) |
 | mise | [mise.jdx.dev](https://mise.jdx.dev) |
 
 ## Credits
 
-workstation-kit puts together tools made by others: Claude Code (Anthropic), the Gentleman Programming tools (gentle-shell, Pi, engram, gentle-ai, GGA), Hermes Agent (Nous Research), NaN, Herdr, CodeGraph, Tailscale, mise and restic. It is not affiliated with any of them.
+workstation-kit puts together tools made by others: Claude Code (Anthropic), the Gentleman Programming tools (gentle-shell, Pi, engram, gentle-ai, GGA), Hermes Agent (Nous Research), NaN, Herdr, Moshi, CodeGraph, Tailscale, mise and restic. It is not affiliated with any of them.
 
 ## License
 
