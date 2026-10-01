@@ -69,7 +69,7 @@ if [ ! -f "$KIT_DIR/kit.conf" ]; then
     read -r -p "  Paste another SSH public key to allow (Enter when done): " extra </dev/tty
     [ -n "$extra" ] || break
     if [[ "$extra" =~ $key_re ]]; then
-      SSH_PUBLIC_KEY=$(printf '%s\n%s' "$SSH_PUBLIC_KEY" "$extra" | sed '/^$/d')
+      SSH_PUBLIC_KEY=$(printf '%s\n%s' "$SSH_PUBLIC_KEY" "$extra" | sed '/^$/d' | awk '!seen[$1 " " $2]++')
     else
       echo "  that is not an SSH public key (it starts with ssh-ed25519, ssh-rsa, ecdsa-...)"
     fi

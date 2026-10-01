@@ -7,9 +7,17 @@ set -euo pipefail
 
 getent group agents >/dev/null || groupadd agents
 
-id "$ADMIN_USER" &>/dev/null || useradd -m -s /bin/bash -c "Administrator" "$ADMIN_USER"
+# new_user NAME COMMENT — if a group with that name already exists (Ubuntu ships an "admin" group),
+# the user joins it instead of failing to create its own.
+new_user() {
+  id "$1" &>/dev/null && return 0
+  if getent group "$1" >/dev/null; then useradd -m -s /bin/bash -g "$1" -c "$2" "$1"
+  else useradd -m -s /bin/bash -c "$2" "$1"
+  fi
+}
+new_user "$ADMIN_USER" "Administrator"
 usermod -aG sudo "$ADMIN_USER"
-id "$DEV_USER" &>/dev/null || useradd -m -s /bin/bash -c "Coding agents" "$DEV_USER"
+new_user "$DEV_USER" "Coding agents"
 usermod -aG agents "$DEV_USER"
 chmod 750 "$(home_of "$DEV_USER")"
 
@@ -22,7 +30,7 @@ fi
 # SSH keys: from kit.conf, or the ones root already has.
 keys=${SSH_PUBLIC_KEY:-}
 [ -n "$keys" ] || keys=$(cat /root/.ssh/authorized_keys 2>/dev/null || true)
-keys=$(printf '%s\n' "$keys" | grep -E '^(ssh-|ecdsa-|sk-)' || true)
+keys=$(printf '%s\n' "$keys" | grep -E '^(ssh-|ecdsa-|sk-)' | awk '!seen[$1 " " $2]++' || true)
 [ -n "$keys" ] || die "No SSH public key: set SSH_PUBLIC_KEY in kit.conf or add one to /root/.ssh/authorized_keys"
 for u in "$ADMIN_USER" "$DEV_USER"; do
   h=$(home_of "$u")
