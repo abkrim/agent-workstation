@@ -157,7 +157,7 @@ step_hermes() {
   local huid; huid=$(id -u hermes)
   (cd /tmp && sudo -u hermes -H env XDG_RUNTIME_DIR="/run/user/$huid" \
     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$huid/bus" \
-    PATH="/home/hermes/.local/bin:/usr/local/bin:/usr/bin:/bin" hermes gateway install --if-missing >/dev/null)
+    PATH="/home/hermes/.local/bin:/usr/local/bin:/usr/bin:/bin" hermes gateway install --if-missing --start-now --start-on-login </dev/null >/dev/null)
   user_systemctl hermes restart hermes-gateway.service
   ok "Hermes is on Telegram: send your bot a message"
 }
