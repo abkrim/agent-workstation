@@ -110,6 +110,25 @@ See **[docs/security.md](docs/security.md)**. In short:
 - Hermes asks before running any command, answers only you, and can only read what you share with it.
 - Security updates install themselves.
 
+## Security checks done on a real install
+
+Before the first release the kit was installed on a fresh VPS and checked from the outside and from the inside. What was run, so you can repeat it:
+
+| Check | How | Result |
+|---|---|---|
+| Nothing answers on the public IP | From another server, TCP connects to 22, 80, 443, 2375, 2376, 4880, 4881, 7437, 8000 and 41641 | All closed |
+| Only SSH over the tailnet | Same connects to the machine's Tailscale IP | Only 22 answers |
+| SSH policy in force | `sshd_config.d/00-agent-workstation.conf`; login attempts as `root` and `hermes` over the tailnet | Both refused; `admin` and `dev` with keys only |
+| Privileges | `id` of every user, `sudo -n true` as `dev`, `getent group docker` | Only `admin` has sudo; `dev`'s password locked; nobody in `docker` |
+| Local listeners | `ss -tlnu` | nan-gate on 127.0.0.1 only; engram on a unix socket; Docker's system daemon off |
+| Secrets | `ls -l` of the NaN key, GitHub token, Claude credentials, Hermes `.env` | All mode 600, owned by their user |
+| Hermes isolation | As a Hermes-like user, `curl` to a `dev` service and to nan-gate on loopback | Service refused, nan-gate allowed |
+| nan-gate sandbox | `systemd-analyze security nan-gate.service`, then a review through its GGA port | 1.1 (OK); review answered |
+| Agent review | A pull request with a hard-coded API key, run through `wt rm` | GGA refused it; nothing merged |
+| Firewall rules load | `iptables-restore --test` on the generated `after.rules` | OK |
+
+Repeat the outside checks any time from your computer, with `<ip>` the server's public IP: `nc -zv -w 3 <ip> 22` should fail, and `ssh dev@<machine-name>` over Tailscale should work. `docs/security.md` has the model behind it.
+
 ## Updates
 
 Every 3 hours, `gentle-update` brings the agents up to date on its own, as `dev` and at low priority:
