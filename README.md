@@ -156,16 +156,15 @@ Everything a fresh install decides for you, and where to change it. All the mode
 | **engram** | one memory per repo, shared by Claude Code and gentle-shell; Hermes has its own | nothing to set; `engram tui` to browse it |
 | **Updates** | every 3 hours; the Gentleman tools from their `main` branch | `systemctl --user edit gentle-update.timer` as `dev` |
 
-**The gentle-shell profiles.** Gentle AI runs gentle-shell with a crew of agents (the orchestrator you talk to, the spec-driven-development agents, reviewers, judges), and a profile says which model each one uses. Two ship with the kit, `opensource-glm` active; they differ only in the orchestrator:
+**The gentle-shell profiles.** Gentle AI runs gentle-shell with a crew of agents (the orchestrator you talk to, its workers, the reviewers, the judges), and a profile says which model each one uses. Two ship with the kit, `opensource-glm` active; they differ only in the orchestrator:
 
 | Agents | `opensource-glm` | `opensource` |
 |---|---|---|
 | orchestrator | GLM 5.3 Flash | DeepSeek V4 Flash |
-| sdd-explore, sdd-spec, sdd-sync, sdd-apply, sdd-archive, jd-judge-a, jd-fix-agent, gentle-ai-worker, review-risk | GLM 5.3 Flash | GLM 5.3 Flash |
-| sdd-design, sdd-research, sdd-proposal, sdd-tasks, sdd-verify, sdd-status, sdd-onboard, jd-judge-b, gentle-ai-explore, gentle-ai-verify, review-refuter, review-readability, review-reliability, review-resilience, review-validator | DeepSeek V4 Flash | DeepSeek V4 Flash |
-| sdd-init | Qwen 3.8 Flash | Qwen 3.8 Flash |
+| gentle-ai-worker, jd-judge-a, jd-fix-agent, review-risk | GLM 5.3 Flash | GLM 5.3 Flash |
+| gentle-ai-explore, gentle-ai-verify, jd-judge-b, review-readability, review-reliability, review-resilience | DeepSeek V4 Flash | DeepSeek V4 Flash |
 
-Thinking is high for every agent except sdd-archive (medium). Add your own profile in the same file and switch with `/gentle:profiles`.
+Thinking is high for every agent. These are the agents Gentle AI 4.0 installs for Pi (ODD is its only workflow now; the SDD agents are gone). Add your own profile in the same file and switch with `/gentle:profiles`.
 
 NaN's limits are per key: 60 requests per minute, and 7 at once on the base plan or 10 on the premium one. Pick `NAN_MAX_CONCURRENT` with room for the agents you run at the same time, and lower if the same key serves another machine.
 

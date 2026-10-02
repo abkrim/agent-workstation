@@ -9,6 +9,11 @@
 #   - GGA reviews with NaN through nan-gate's GGA port, and looks at every file of a pull request.
 #     gentle-ai's gga component writes ~/.config/gga/config with PROVIDER="claude" and a short list
 #     of file patterns, which would bill reviews to a Claude plan and skip docs and shell scripts.
+#   - Pi's memory goes through gentle-engram's native mem_* tools only. Since engram 3.0 and
+#     gentle-engram 0.2.0 the Engram MCP entry in Pi's mcp.json is a leftover that doubles the
+#     tools and makes writes unreliable (gentle-engram warns about it at every start); the
+#     pi-mcp-adapter package replaces Pi's built-in MCP support and Gentle AI 4.0 no longer wants
+#     it. Both are removed when found.
 # Run as the dev user by modules/88-gentle-ai.sh and 90-workflow.sh, and by gentle-update after
 # each `gentle-ai sync`, because gentle-ai rewrites both files.
 set -euo pipefail
@@ -53,4 +58,36 @@ if changed:
         f.write("\n")
     os.chmod(p + ".tmp", 0o600)
     os.replace(p + ".tmp", p)
+EOF
+
+# Pi (gentle-shell): native memory tools only, no MCP adapter. Only when gentle-engram 0.2 or later
+# is installed; an older gentle-engram still needs the MCP entry.
+python3 - <<'EOF'
+import json, os
+agent = os.path.expanduser("~/.gentle-shell/agent")
+pkg = f"{agent}/npm/node_modules/gentle-engram/package.json"
+try:
+    major, minor = (int(x) for x in json.load(open(pkg))["version"].split(".")[:2])
+except Exception:
+    raise SystemExit(0)
+if (major, minor) < (0, 2):
+    raise SystemExit(0)
+def save(p, d):
+    with open(p + ".tmp", "w") as f:
+        json.dump(d, f, indent=2); f.write("\n")
+    os.chmod(p + ".tmp", 0o600); os.replace(p + ".tmp", p)
+m = f"{agent}/mcp.json"
+if os.path.exists(m):
+    d = json.load(open(m))
+    if "engram" in d.get("mcpServers", {}):
+        del d["mcpServers"]["engram"]
+        save(m, d); print("✓ Pi: Engram MCP entry removed from mcp.json (native mem_* tools own memory)")
+s = f"{agent}/settings.json"
+if os.path.exists(s):
+    d = json.load(open(s))
+    pk = d.get("packages") or []
+    keep = [x for x in pk if not str(x).startswith("npm:pi-mcp-adapter")]
+    if keep != pk:
+        d["packages"] = keep
+        save(s, d); print("✓ Pi: pi-mcp-adapter dropped from packages (Pi has built-in MCP)")
 EOF
