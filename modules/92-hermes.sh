@@ -95,29 +95,51 @@ user_systemctl "$DEV_USER" daemon-reload
 user_systemctl "$DEV_USER" enable --now shared-repos.timer >/dev/null 2>&1
 
 # --- Loopback guard: the hermes user may connect on this machine only to nan-gate (127.0.0.1:4880).
-# Written into UFW's after.rules, so it survives reloads and reboots. If UFW refuses the new file,
-# the previous one is put back: the firewall is never left broken.
-guard4="-A ufw-after-output -o lo -p tcp -m owner --uid-owner $U -m multiport ! --dports 4880 -j REJECT --reject-with tcp-reset"
-guard6="-A ufw6-after-output -o lo -p tcp -m owner --uid-owner $U -j REJECT --reject-with tcp-reset"
-add_after_rule() {  # add_after_rule FILE RULE COMMENT
-  grep -qF -- "$2" "$1" && return 0
-  cp -a "$1" "$1.kit-backup"
-  awk -v r="$2" -v c="# agent-workstation: $3 (modules/92-hermes.sh)" \
-    '!done && /^COMMIT/ { print c; print r; done=1 } { print }' "$1" > "$1.kit-new" && mv "$1.kit-new" "$1"
+# The rules go into UFW's before.rules, right before "-A ufw-before-output -o lo -j ACCEPT": that
+# line accepts all loopback traffic, so a rule placed in after.rules never sees it. They survive
+# reloads and reboots. If UFW refuses the new files, the previous ones are put back: the firewall
+# is never left broken.
+guard4="-A ufw-before-output -o lo -p tcp -m owner --uid-owner $U -m multiport ! --dports 4880 -j REJECT --reject-with tcp-reset"
+guard6="-A ufw6-before-output -o lo -p tcp -m owner --uid-owner $U -j REJECT --reject-with tcp-reset"
+anchor4='-A ufw-before-output -o lo -j ACCEPT'
+anchor6='-A ufw6-before-output -o lo -j ACCEPT'
+ufw_backup() { [ -f "$1.kit-backup" ] || cp -a "$1" "$1.kit-backup"; }
+add_before_rule() {  # add_before_rule FILE ANCHOR RULE COMMENT: the rule goes right before the anchor line
+  grep -qF -- "$3" "$1" && return 0
+  grep -qxF -- "$2" "$1" || { warn "$1 has no line '$2': UFW changed, loopback guard not installed"; return 0; }
+  ufw_backup "$1"
+  awk -v a="$2" -v r="$3" -v c="# agent-workstation: $4 (modules/92-hermes.sh)" \
+    '!done && $0 == a { print c; print r; done=1 } { print }' "$1" > "$1.kit-new" && mv "$1.kit-new" "$1"
   chmod 640 "$1"
 }
-add_after_rule /etc/ufw/after.rules "$guard4" "Hermes may reach only nan-gate on loopback"
-add_after_rule /etc/ufw/after6.rules "$guard6" "Hermes has no IPv6 loopback"
+drop_rule() {  # drop_rule FILE PATTERN: an earlier kit put the rule in after.rules, where it did nothing
+  grep -qF -- "$2" "$1" || return 0
+  ufw_backup "$1"
+  awk -v p="$2" 'index($0, p) { skip=1; next } /^# agent-workstation: Hermes/ { held=$0; next } { if (held != "") { print held; held="" } print }' "$1" > "$1.kit-new" && mv "$1.kit-new" "$1"
+  chmod 640 "$1"
+}
+drop_rule /etc/ufw/after.rules "-A ufw-after-output -o lo -p tcp -m owner --uid-owner $U "
+drop_rule /etc/ufw/after6.rules "-A ufw6-after-output -o lo -p tcp -m owner --uid-owner $U "
+add_before_rule /etc/ufw/before.rules "$anchor4" "$guard4" "Hermes may reach only nan-gate on loopback"
+add_before_rule /etc/ufw/before6.rules "$anchor6" "$guard6" "Hermes has no IPv6 loopback"
+ufw_files="/etc/ufw/before.rules /etc/ufw/before6.rules /etc/ufw/after.rules /etc/ufw/after6.rules"
+ufw_restore() {
+  for f in $ufw_files; do [ -f "$f.kit-backup" ] && mv "$f.kit-backup" "$f"; done
+  ufw reload >/dev/null 2>&1 || true
+}
 if ufw status 2>/dev/null | grep -q "Status: active"; then
-  if ufw reload >/dev/null 2>&1; then
-    ok "loopback guard: $U reaches only 127.0.0.1:4880 on this machine"
+  if iptables-restore --test /etc/ufw/before.rules 2>/dev/null && ip6tables-restore --test /etc/ufw/before6.rules 2>/dev/null && ufw reload >/dev/null 2>&1; then
+    if sudo -u "$U" timeout 3 bash -c 'exec 3<>/dev/tcp/127.0.0.1/7437' 2>/dev/null; then
+      warn "loopback guard loaded but $U still reaches 127.0.0.1:7437: check the chain order in /etc/ufw/before.rules"
+    else
+      ok "loopback guard: $U reaches only 127.0.0.1:4880 on this machine"
+    fi
   else
-    for f in /etc/ufw/after.rules /etc/ufw/after6.rules; do [ -f "$f.kit-backup" ] && mv "$f.kit-backup" "$f"; done
-    ufw reload >/dev/null 2>&1 || true
+    ufw_restore
     warn "UFW rejected the loopback guard; previous rules restored (check 'ufw reload' by hand)"
   fi
 fi
-rm -f /etc/ufw/after.rules.kit-backup /etc/ufw/after6.rules.kit-backup
+for f in $ufw_files; do rm -f "$f.kit-backup"; done
 
 # --- Gentle AI for Hermes: its own Go to build engram and gentle-ai (Node comes with Hermes) ---
 as_user "$U" mise use -g --yes go@latest >/dev/null
