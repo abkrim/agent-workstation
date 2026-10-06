@@ -140,7 +140,10 @@ if os.path.exists(f"{d}/uv.lock"):
 elif os.path.exists(f"{d}/package.json"):
     pm = "pnpm" if os.path.exists(f"{d}/pnpm-lock.yaml") else "npm"
     cmds += [f"- Dependencies: `{pm} install`"]
-    scripts = json.load(open(f"{d}/package.json")).get("scripts", {})
+    try:
+        scripts = json.load(open(f"{d}/package.json")).get("scripts", {})
+    except Exception:  # a malformed manifest must not kill repo-add; render the rules without command hints
+        scripts = {}
     cmds += [f"- `{pm} run {s}`" for s in ("dev", "build", "test", "lint", "typecheck", "format:check") if s in scripts]
 text = open(tmpl).read().replace("{{NAME}}", name).replace("{{COMMANDS}}", "".join(c + "\n" for c in cmds))
 open(f"{d}/AGENTS.md", "w").write(text)
@@ -167,8 +170,12 @@ sys.exit(0 if any((w.get("worktree") or {}).get("checkout_path") == sys.argv[1] 
     echo "= Herdr: workspace $name already exists"
   else
     # worktree open (not workspace create): Herdr records the repo path and never duplicates it
-    herdr worktree open --cwd "$dir" --path "$dir" --label "$name" --no-focus >/dev/null
-    echo "✓ Herdr: workspace $name"
+    # Non-fatal: the repo is fully onboarded by now; repo-add is idempotent, run it again once Herdr is up.
+    if herdr worktree open --cwd "$dir" --path "$dir" --label "$name" --no-focus >/dev/null; then
+      echo "✓ Herdr: workspace $name"
+    else
+      echo "  (Herdr: could not open workspace $name — run repo-add again once Herdr is up)"
+    fi
   fi
 else
   echo "  (Herdr is not running: once it is, run repo-add again to get the workspace)"
